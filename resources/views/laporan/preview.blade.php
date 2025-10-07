@@ -1,74 +1,56 @@
 <div class="space-y-6">
-    {{-- ===== HEADER ===== --}}
     @php
     use Carbon\Carbon;
-    $periodeFormat = Carbon::parse($periode)->translatedFormat('F Y');
-    $jumlahBidang = $data['per_bidang']->count();
-    $namaBidang = $jumlahBidang === 1 ? $data['per_bidang']->first()['nama'] : null;
+    $periodeFormat = isset($periode)
+    ? (strlen($periode) === 7
+    ? Carbon::parse($periode)->translatedFormat('F Y')
+    : Carbon::parse($periode . '-01')->translatedFormat('Y'))
+    : now()->translatedFormat('F Y');
     @endphp
 
+    {{-- ===== HEADER ===== --}}
     <div class="text-center border-b pb-4">
-        <h2 class="text-2xl font-bold text-gray-900 tracking-wide">
-            LAPORAN KINERJA
-            @if($namaBidang)
-            {{ strtoupper($namaBidang) }}
-            @else
-            SEMUA BIDANG
-            @endif
-        </h2>
+        <h2 class="text-2xl font-bold text-gray-900 tracking-wide uppercase">LAPORAN KINERJA</h2>
         <p class="text-gray-600">Periode: {{ $periodeFormat }}</p>
+        <p class="text-gray-500 italic">Jenis: {{ ucwords(str_replace('_', ' ', $jenis_laporan)) }}</p>
     </div>
 
-    {{-- ===== STATISTIK RINGKAS ===== --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-gray-50 p-4 rounded-lg text-center">
-            <p class="text-xs text-gray-500 uppercase">Total Kegiatan</p>
-            <h4 class="text-3xl font-bold text-blue-600">{{ $data['summary']['total_kegiatan'] }}</h4>
-        </div>
-        <div class="bg-gray-50 p-4 rounded-lg text-center">
-            <p class="text-xs text-gray-500 uppercase">Selesai</p>
-            <h4 class="text-3xl font-bold text-green-600">{{ $data['summary']['selesai'] }}</h4>
-        </div>
-        <div class="bg-gray-50 p-4 rounded-lg text-center">
-            <p class="text-xs text-gray-500 uppercase">Dalam Progress</p>
-            <h4 class="text-3xl font-bold text-yellow-600">{{ $data['summary']['dalam_progress'] }}</h4>
-        </div>
-        <div class="bg-gray-50 p-4 rounded-lg text-center">
-            <p class="text-xs text-gray-500 uppercase">Terlambat</p>
-            <h4 class="text-3xl font-bold text-red-600">{{ $data['summary']['terlambat'] }}</h4>
-        </div>
-    </div>
+    {{-- ===== KONTEN BERDASARKAN JENIS ===== --}}
+    @switch($jenis_laporan)
 
-    {{-- ===== TABEL PER BIDANG ===== --}}
+    {{-- ======================== KINERJA BIDANG ======================== --}}
+    @case('kinerja_bidang')
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200 border text-sm">
-            <thead class="bg-gray-50">
-                <tr class="text-gray-600">
-                    <th class="px-6 py-3 text-left font-medium uppercase">Bidang</th>
-                    <th class="px-6 py-3 text-left font-medium uppercase">Total Kegiatan</th>
-                    <th class="px-6 py-3 text-left font-medium uppercase">Rata-rata Capaian</th>
-                    <th class="px-6 py-3 text-left font-medium uppercase">Total Anggaran</th>
-                    <th class="px-6 py-3 text-left font-medium uppercase">Realisasi Anggaran</th>
-                    <th class="px-6 py-3 text-left font-medium uppercase">Persentase</th>
-                    <th class="px-6 py-3 text-left font-medium uppercase">Deviasi</th>
+        <table class="min-w-full border text-sm divide-y divide-gray-200">
+            <thead class="bg-gray-50 text-gray-700 uppercase">
+                <tr>
+                    <th class="px-4 py-2 text-left">Bidang</th>
+                    <th class="px-4 py-2 text-left">Nama Kegiatan</th>
+                    <th class="px-4 py-2 text-left">Realisasi Anggaran</th>
+                    <th class="px-4 py-2 text-left">Deviasi</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                @foreach($data['per_bidang'] as $row)
+            <tbody>
+                @foreach($data['perBidang'] ?? [] as $row)
+                @php
+                $bidangModel = \App\Models\Bidang::where('nama', $row['nama'])->first();
+                $list = $bidangModel ? $bidangModel->kegiatans()->pluck('nama')->toArray() : [];
+                @endphp
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-3 font-medium text-gray-800">{{ $row['nama'] }}</td>
-                    <td class="px-6 py-3">{{ $row['total_kegiatan'] }}</td>
-                    <td class="px-6 py-3">{{ number_format($row['avg_capaian'], 1) }}%</td>
-                    <td class="px-6 py-3">Rp {{ number_format($row['total_anggaran'], 0, ',', '.') }}</td>
-                    <td class="px-6 py-3">Rp {{ number_format($row['realisasi_anggaran'], 0, ',', '.') }}</td>
-                    <td
-                        class="px-6 py-3 font-medium
-                        {{ $row['persentase_anggaran'] >= 90 ? 'text-green-600' : ($row['persentase_anggaran'] >= 70 ? 'text-yellow-600' : 'text-red-600') }}">
-                        {{ number_format($row['persentase_anggaran'], 1) }}%
+                    <td class="px-4 py-2 font-medium">{{ $row['nama'] }}</td>
+                    <td class="px-4 py-2">
+                        @if(count($list))
+                        <ul class="list-disc ml-4 text-gray-700 text-xs">
+                            @foreach($list as $nama)
+                            <li>{{ $nama }}</li>
+                            @endforeach
+                        </ul>
+                        @else
+                        <span class="text-gray-400">-</span>
+                        @endif
                     </td>
-                    <td
-                        class="px-6 py-3 font-medium
-                        {{ $row['deviasi'] > 0 ? 'text-green-600' : ($row['deviasi'] < 0 ? 'text-red-600' : 'text-gray-600') }}">
+                    <td class="px-4 py-2">Rp {{ number_format($row['realisasi_anggaran'], 0, ',', '.') }}</td>
+                    <td class="px-4 py-2 {{ $row['deviasi'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                         Rp {{ number_format($row['deviasi'], 0, ',', '.') }}
                     </td>
                 </tr>
@@ -76,6 +58,126 @@
             </tbody>
         </table>
     </div>
+    @break
+
+    {{-- ======================== BULANAN ======================== --}}
+    @case('bulanan')
+    <div class="overflow-x-auto">
+        <table class="min-w-full border text-sm divide-y divide-gray-200">
+            <thead class="bg-gray-50 text-gray-700 uppercase">
+                <tr>
+                    <th class="px-4 py-2 text-left">Bidang</th>
+                    <th class="px-4 py-2 text-left">Nama Kegiatan</th>
+                    <th class="px-4 py-2 text-left">Realisasi Anggaran</th>
+                    <th class="px-4 py-2 text-left">Deviasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($data['bulanan'] ?? [] as $item)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2">{{ $item['bidang'] ?? '-' }}</td>
+                    <td class="px-4 py-2 font-medium">{{ $item['nama'] ?? '-' }}</td>
+                    <td class="px-4 py-2">Rp {{ number_format($item['anggaran'] ?? 0, 0, ',', '.') }}</td>
+                    <td class="px-4 py-2 {{ ($item['deviasi'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                        Rp {{ number_format($item['deviasi'] ?? 0, 0, ',', '.') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @break
+
+    {{-- ======================== TRIWULAN ======================== --}}
+    @case('triwulan')
+    <div class="overflow-x-auto mt-3">
+        <h3 class="text-lg font-semibold text-gray-800 mb-2">
+            {{ $data['label'] ?? 'Rekap Triwulan' }}
+        </h3>
+
+        {{-- RINGKASAN --}}
+        @if(isset($data['ringkasan']))
+        <div class="mb-3 text-sm text-gray-700">
+            <p>Total Kegiatan: <b>{{ $data['ringkasan']['total'] }}</b></p>
+            <p>Rata-rata Fisik: <b>{{ $data['ringkasan']['rata_fisik'] }}%</b></p>
+            <p>Realisasi Anggaran: <b>Rp {{ number_format($data['ringkasan']['anggaran'], 0, ',', '.') }}</b></p>
+            <p>Persentase: <b>{{ $data['ringkasan']['persentase'] }}%</b></p>
+        </div>
+        @endif
+
+        {{-- TABEL DETAIL --}}
+        <table class="min-w-full border text-sm divide-y divide-gray-200">
+            <thead class="bg-gray-50 text-gray-700 uppercase">
+                <tr>
+                    <th class="px-4 py-2 text-left">Bidang</th>
+                    <th class="px-4 py-2 text-left">Nama Kegiatan</th>
+                    <th class="px-4 py-2 text-left">Jumlah Anggaran</th>
+                    <th class="px-4 py-2 text-left">Realisasi Triwulan</th>
+                    <th class="px-4 py-2 text-left">Sisa Anggaran</th>
+                    <th class="px-4 py-2 text-left">Deviasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($data['kegiatans'] ?? [] as $k)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2">{{ $k['bidang'] }}</td>
+                    <td class="px-4 py-2">{{ $k['nama'] }}</td>
+                    <td class="px-4 py-2">Rp {{ number_format($k['anggaran'], 0, ',', '.') }}</td>
+                    <td class="px-4 py-2">Rp {{ number_format($k['realisasi'], 0, ',', '.') }}</td>
+                    <td class="px-4 py-2">Rp {{ number_format($k['sisa'], 0, ',', '.') }}</td>
+                    <td class="px-4 py-2 {{ $k['deviasi'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                        Rp {{ number_format($k['deviasi'], 0, ',', '.') }}
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-gray-500">
+                        Tidak ada data kegiatan pada triwulan ini.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @break
+
+
+
+    {{-- ======================== TAHUNAN ======================== --}}
+    @case('tahunan')
+    <div class="overflow-x-auto">
+        <table class="min-w-full border text-sm divide-y divide-gray-200">
+            <thead class="bg-gray-50 text-gray-700 uppercase">
+                <tr>
+                    <th class="px-4 py-2 text-left">Bidang</th>
+                    <th class="px-4 py-2 text-left">Nama Kegiatan</th>
+                    <th class="px-4 py-2 text-left">Realisasi Anggaran</th>
+                    <th class="px-4 py-2 text-left">Deviasi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                $kegiatans = \App\Models\Kegiatan::with('bidang')
+                ->whereYear('created_at', $periode->year)
+                ->get(['nama','bidang_id','target_anggaran','current_budget_realization']);
+                @endphp
+                @foreach($kegiatans as $k)
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-2">{{ $k->bidang->nama ?? '-' }}</td>
+                    <td class="px-4 py-2">{{ $k->nama }}</td>
+                    <td class="px-4 py-2">Rp {{ number_format($k->current_budget_realization, 0, ',', '.') }}</td>
+                    <td
+                        class="px-4 py-2 {{ ($k->current_budget_realization - $k->target_anggaran) >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                        Rp {{ number_format($k->current_budget_realization - $k->target_anggaran, 0, ',', '.') }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @break
+
+    @endswitch
 
     {{-- ===== FOOTER ===== --}}
     <div class="text-right text-xs text-gray-500 pt-4 border-t">

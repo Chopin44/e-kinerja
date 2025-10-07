@@ -7,7 +7,8 @@
                 <i class="fas fa-chart-line text-blue-600 mr-3"></i>
                 Dashboard Overview
             </h1>
-            <p class="text-gray-600 mt-1">Ringkasan kegiatan Dinas Kepemudaan dan Olahraga dan Pariwisata </p>
+            <p class="text-gray-600 mt-1">Ringkasan kegiatan Dinas Kepemudaan dan Olahraga dan Pariwisata Kabupaten
+                Pekalongan </p>
         </div>
 
         <!-- Stats Cards -->
@@ -61,30 +62,30 @@
             <div class="p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     @foreach ($bidangs as $bidang)
-                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center">
-                                    <div
-                                        class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white">
-                                        <i class="{{ $bidang['icon'] }}"></i>
-                                    </div>
-                                    <div class="ml-3">
-                                        <h3 class="text-sm font-medium text-gray-900">{{ $bidang['nama'] }}</h3>
-                                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center">
+                                <div
+                                    class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-white">
+                                    <i class="{{ $bidang['icon'] }}"></i>
                                 </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold text-blue-600">{{ $bidang['total_kegiatan'] }}</div>
-                                    <div class="text-xs text-gray-500">Total Kegiatan</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-2xl font-bold text-green-600">
-                                        {{ number_format($bidang['avg_progress'], 0) }}%</div>
-                                    <div class="text-xs text-gray-500">Avg. Progress</div>
+                                <div class="ml-3">
+                                    <h3 class="text-sm font-medium text-gray-900">{{ $bidang['nama'] }}</h3>
                                 </div>
                             </div>
                         </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600">{{ $bidang['total_kegiatan'] }}</div>
+                                <div class="text-xs text-gray-500">Total Kegiatan</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">
+                                    {{ number_format($bidang['avg_progress'], 0) }}%</div>
+                                <div class="text-xs text-gray-500">Rata-rata Progress</div>
+                            </div>
+                        </div>
+                    </div>
                     @endforeach
                 </div>
             </div>
@@ -99,60 +100,60 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Kegiatan</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Bidang</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Progress Fisik</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Progress Anggaran</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Status</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach ($kegiatanTerbaru as $kegiatan)
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ $kegiatan->nama }}</div>
-                                    <div class="text-sm text-gray-500">PJ: {{ $kegiatan->user->name }}</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $kegiatan->bidang->nama }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-green-500 h-2 rounded-full progress-fill"
-                                            style="width: {{ $kegiatan->current_progress }}%"></div>
-                                    </div>
-                                    <div class="text-sm text-gray-500 mt-1">
-                                        {{ number_format($kegiatan->current_progress, 1) }}%</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @php
-                                        $budgetProgress =
-                                            $kegiatan->target_anggaran > 0
-                                                ? ($kegiatan->current_budget_realization / $kegiatan->target_anggaran) *
-                                                    100
-                                                : 0;
-                                    @endphp
-                                    <div class="w-full bg-gray-200 rounded-full h-2">
-                                        <div class="bg-blue-500 h-2 rounded-full progress-fill"
-                                            style="width: {{ $budgetProgress }}%"></div>
-                                    </div>
-                                    <div class="text-sm text-gray-500 mt-1">{{ number_format($budgetProgress, 1) }}%
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    @php
-                                        $statusClass = 'status-' . str_replace('_', '-', $kegiatan->status_evaluasi);
-                                    @endphp
-                                    <span class="status-badge {{ $statusClass }}">
-                                        {{ ucfirst(str_replace('_', ' ', $kegiatan->status_evaluasi)) }}
-                                    </span>
-                                </td>
-                            </tr>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ $kegiatan->nama }}</div>
+                                <div class="text-sm text-gray-500">PJ: {{ $kegiatan->user->name }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ $kegiatan->bidang->nama }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full progress-fill"
+                                        style="width: {{ $kegiatan->current_progress }}%"></div>
+                                </div>
+                                <div class="text-sm text-gray-500 mt-1">
+                                    {{ number_format($kegiatan->current_progress, 1) }}%</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @php
+                                $budgetProgress =
+                                $kegiatan->target_anggaran > 0
+                                ? ($kegiatan->current_budget_realization / $kegiatan->target_anggaran) *
+                                100
+                                : 0;
+                                @endphp
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full progress-fill"
+                                        style="width: {{ $budgetProgress }}%"></div>
+                                </div>
+                                <div class="text-sm text-gray-500 mt-1">{{ number_format($budgetProgress, 1) }}%
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @php
+                                $statusClass = 'status-' . str_replace('_', '-', $kegiatan->status_evaluasi);
+                                @endphp
+                                <span class="status-badge {{ $statusClass }}">
+                                    {{ ucfirst(str_replace('_', ' ', $kegiatan->status_evaluasi)) }}
+                                </span>
+                            </td>
+                        </tr>
                         @endforeach
                     </tbody>
                 </table>

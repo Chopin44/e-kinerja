@@ -98,7 +98,7 @@
 
                     <a href="{{ route('laporan.index') }}"
                         class="nav-link block px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-20 {{ request()->routeIs('laporan.*') ? 'active' : '' }}">
-                        <i class="fas fa-file-chart-column mr-3"></i> Laporan per Bidang
+                        <i class="fas fa-file-alt mr-3"></i> Laporan Kinerja
                     </a>
                 </nav>
             </div>
@@ -108,24 +108,35 @@
         <div class="flex-1 flex flex-col w-0">
             <!-- Navbar -->
             <nav class="bg-white border-b border-gray-200 fixed w-full z-30 top-0">
-                <div class="px-3 py-3 lg:px-5 lg:pl-3 flex items-center justify-between">
-                    <div class="flex items-center">
+                <div class="px-6 lg:px-10 py-3 flex items-center justify-between">
+                    <!-- Kiri: logo dan hamburger -->
+                    <div class="flex items-center gap-3">
                         <!-- Hamburger -->
                         <button @click="sidebarOpen = !sidebarOpen"
-                            class="mr-3 text-gray-600 hover:text-gray-900 cursor-pointer p-2 hover:bg-gray-100 rounded-lg">
+                            class="text-gray-600 hover:text-gray-900 cursor-pointer p-2 hover:bg-gray-100 rounded-lg">
                             <i class="fas fa-bars text-lg"></i>
                         </button>
-                        <a href="{{ route('dashboard') }}" class="text-xl font-bold flex items-center">
-                            <i class="fas fa-building text-blue-600 mr-2"></i>
-                            <span class="text-blue-600">E-Kinerja</span>
+
+                        <!-- Logo -->
+                        <a href="{{ route('dashboard') }}" class="flex items-center text-xl font-bold">
+                            <img src="{{ asset('images/dinporapar.png') }}" alt="Logo DINPORAPAR"
+                                class="w-12 h-12 mr-4">
+                            <div class="flex flex-col leading-tight">
+                                <span class="text-blue-600">E-Kinerja</span>
+                                <span class="text-sm text-gray-800 font-normal">
+                                    DINPORAPAR Kab. Pekalongan
+                                </span>
+                            </div>
                         </a>
                     </div>
 
-                    <div class="flex items-center gap-4">
+                    <!-- Kanan: tahun & user -->
+                    <div class="flex items-center gap-6">
                         <!-- Tahun aktif -->
                         <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-700">Tahun:</label>
-                            <select id="yearSelector" class="border border-gray-300 rounded-md px-3 py-1 text-sm">
+                            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Tahun:</label>
+                            <select id="yearSelector"
+                                class="border border-gray-300 rounded-md px-3 py-1 text-sm min-w-[100px] focus:ring-blue-500 focus:border-blue-500">
                                 @for($year = date('Y') - 2; $year <= date('Y') + 2; $year++) <option value="{{ $year }}"
                                     {{ $year==date('Y') ? 'selected' : '' }}>
                                     {{ $year }}
@@ -134,19 +145,20 @@
                             </select>
                         </div>
 
-                        <!-- User -->
+                        <!-- User info -->
                         <div class="flex items-center gap-3">
-                            <div class="text-right">
+                            <div class="text-right hidden sm:block">
                                 <div class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</div>
                                 <div class="text-xs text-gray-500">{{ Auth::user()->bidang->nama ?? 'Admin' }}</div>
                             </div>
-                            <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                <span class="text-white text-sm font-medium">{{ substr(Auth::user()->name, 0, 1)
-                                    }}</span>
+                            <div class="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center">
+                                <span class="text-white text-sm font-semibold">{{ strtoupper(substr(Auth::user()->name,
+                                    0, 1)) }}</span>
                             </div>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="text-gray-500 hover:text-red-600 ml-2">
+                                <button type="submit"
+                                    class="text-gray-500 hover:text-red-600 transition-colors p-2 rounded-md hover:bg-gray-100">
                                     <i class="fas fa-sign-out-alt"></i>
                                 </button>
                             </form>
@@ -154,6 +166,7 @@
                     </div>
                 </div>
             </nav>
+
 
             <!-- Main -->
             <main id="mainContent" class="pt-20 px-6">

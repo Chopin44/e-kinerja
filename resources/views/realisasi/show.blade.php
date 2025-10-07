@@ -1,215 +1,134 @@
 <x-app-layout>
-    <div class="space-y-8">
+    <div class="space-y-8 max-w-6xl mx-auto px-4">
 
-        {{-- ===== HEADER ===== --}}
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-100 p-6">
-            <div class="flex items-center justify-between">
+        {{-- HEADER --}}
+        <div class="bg-white rounded-lg shadow p-6 flex items-center justify-between border border-gray-100">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-900 flex items-center gap-3">
+                    <i class="fas fa-clipboard-check text-blue-600"></i>
+                    Detail Realisasi
+                </h1>
+                <p class="text-gray-600 mt-1 text-sm">Informasi lengkap realisasi kegiatan</p>
+            </div>
+            <a href="{{ route('realisasi.index') }}"
+                class="text-sm bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-gray-700 transition">
+                <i class="fas fa-arrow-left mr-2"></i>Kembali
+            </a>
+        </div>
+
+        {{-- INFORMASI KEGIATAN --}}
+        <div class="bg-white rounded-lg shadow border border-gray-100 p-6 space-y-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <i class="fas fa-tasks text-blue-500"></i> Data Kegiatan
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                    <h1 class="text-2xl font-semibold text-gray-900 flex items-center gap-3">
-                        <i class="fas fa-clipboard-list text-blue-600"></i>
-                        Detail Monitoring Kegiatan
-                    </h1>
-                    <p class="text-gray-600 mt-1 font-medium tracking-wide">{{ $kegiatan->nama }}</p>
+                    <p class="text-xs text-gray-500 uppercase">Nama Kegiatan</p>
+                    <p class="text-gray-800 font-medium">{{ $realisasi->kegiatan->nama ?? '-' }}</p>
                 </div>
-                <a href="{{ route('monitoring.index') }}"
-                    class="px-4 py-2 rounded-lg bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-sm font-medium shadow-sm transition-all">
-                    <i class="fas fa-arrow-left mr-2"></i>Kembali
-                </a>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Bidang</p>
+                    <p class="text-gray-800 font-medium">{{ $realisasi->kegiatan->bidang->nama ?? '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Penanggung Jawab</p>
+                    <p class="text-gray-800 font-medium">{{ $realisasi->kegiatan->user->name ?? '-' }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Tahun</p>
+                    <p class="text-gray-800 font-medium">{{ $realisasi->kegiatan->tahun ?? '-' }}</p>
+                </div>
             </div>
         </div>
 
-        {{-- ===== RINGKASAN KEGIATAN ===== --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-6">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase">Bidang</p>
-                        <p class="font-medium text-gray-900">{{ $kegiatan->bidang->nama ?? '-' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase">Penanggung Jawab</p>
-                        <p class="font-medium text-gray-900">{{ $kegiatan->user->name ?? '-' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase">Periode</p>
-                        <p class="font-medium text-gray-900">{{ $kegiatan->periode ?? '-' }}</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase">Target Fisik</p>
-                        <p class="font-medium text-gray-900">{{ $kegiatan->target_fisik }}%</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase">Target Anggaran</p>
-                        <p class="font-medium text-gray-900">
-                            Rp {{ number_format((float)$kegiatan->target_anggaran,0,',','.') }}
-                        </p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500 uppercase">Status Evaluasi</p>
-                        <p class="font-medium capitalize text-gray-900">
-                            {{ str_replace('_',' ', $status_evaluasi ?? '-') }}
-                        </p>
+        {{-- DETAIL REALISASI --}}
+        <div class="bg-white rounded-lg shadow border border-gray-100 p-6 space-y-4">
+            <h3 class="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <i class="fas fa-chart-line text-green-500"></i> Data Realisasi
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Tanggal Realisasi</p>
+                    <p class="text-gray-800 font-medium">
+                        {{ $realisasi->tanggal_realisasi?->format('d M Y') ?? '-' }}
+                    </p>
+                </div>
+
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Realisasi Fisik</p>
+                    <div class="flex items-center gap-3">
+                        <div class="flex-1 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full"
+                                style="width: {{ $realisasi->realisasi_fisik ?? 0 }}%"></div>
+                        </div>
+                        <span class="text-sm font-semibold text-gray-700">{{ $realisasi->realisasi_fisik }}%</span>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-                    {{-- Progress Fisik --}}
-                    <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-semibold text-gray-700">Progress Fisik Saat Ini</h3>
-                            <span class="text-sm font-bold text-gray-900">{{ $current_progress }}%</span>
-                        </div>
-                        <div class="progress-bar mt-2">
-                            <div class="progress-fill" style="width: {{ (float)$current_progress }}%"></div>
-                        </div>
-                    </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Realisasi Anggaran</p>
+                    <p class="text-gray-800 font-medium">
+                        Rp {{ number_format($realisasi->realisasi_anggaran ?? 0, 0, ',', '.') }}
+                    </p>
+                    <p class="text-xs text-gray-500">
+                        Target: Rp {{ number_format($realisasi->kegiatan->target_anggaran ?? 0, 0, ',', '.') }}
+                    </p>
+                </div>
 
-                    {{-- Realisasi Anggaran --}}
-                    <div class="border rounded-lg p-4 hover:bg-gray-50 transition">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-semibold text-gray-700">Realisasi Anggaran</h3>
-                            <span class="text-sm font-bold text-gray-900">{{ $budget_percentage }}%</span>
-                        </div>
-                        <div class="progress-bar mt-2">
-                            <div class="progress-fill" style="width: {{ (float)$budget_percentage }}%"></div>
-                        </div>
-                        <div class="mt-2 text-sm">
-                            <div class="text-gray-700 font-medium">
-                                Rp {{ number_format((float)$budget_realization, 0, ',', '.') }}
-                            </div>
-                            <div class="text-gray-500 text-xs">
-                                dari target Rp {{ number_format((float)$kegiatan->target_anggaran, 0, ',', '.') }}
-                            </div>
-                        </div>
-                    </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Status</p>
+                    @php
+                    $statusColors = [
+                    'draft' => 'bg-gray-100 text-gray-800',
+                    'submitted' => 'bg-blue-100 text-blue-800',
+                    'approved' => 'bg-green-100 text-green-800',
+                    'rejected' => 'bg-red-100 text-red-800',
+                    ];
+                    @endphp
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold 
+                        {{ $statusColors[$realisasi->status] ?? 'bg-gray-100 text-gray-600' }}">
+                        {{ ucfirst($realisasi->status) }}
+                    </span>
                 </div>
             </div>
 
-            {{-- Evaluasi Terakhir --}}
-            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-all p-6">
-                <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <i class="fas fa-comments text-blue-500"></i> Evaluasi Terakhir
-                </h3>
-                @if($latestEvaluation)
-                <div class="space-y-2 text-sm">
-                    <div><span class="text-gray-500">Tanggal:</span>
-                        {{ optional($latestEvaluation->tanggal_evaluasi)->format('d/m/Y') }}</div>
-                    <div><span class="text-gray-500">Status:</span>
-                        {{ str_replace('_',' ', $latestEvaluation->status_evaluasi) }}</div>
-                    <div><span class="text-gray-500">Evaluator:</span>
-                        {{ $latestEvaluation->evaluator->name ?? '-' }}</div>
-                    <div class="text-gray-500">Catatan:</div>
-                    <div class="p-3 bg-gray-50 rounded">{{ $latestEvaluation->catatan_evaluasi }}</div>
-                    @if(!empty($latestEvaluation->rekomendasi))
-                    <div class="text-gray-500">Rekomendasi:</div>
-                    <div class="p-3 bg-gray-50 rounded">{{ $latestEvaluation->rekomendasi }}</div>
-                    @endif
+            <div>
+                <p class="text-xs text-gray-500 uppercase">Catatan</p>
+                <div class="bg-gray-50 border rounded-lg p-3 text-sm text-gray-800">
+                    {{ $realisasi->catatan ?? 'Tidak ada catatan tambahan.' }}
                 </div>
-                @else
-                <div class="text-sm text-gray-500">Belum ada evaluasi.</div>
-                @endif
             </div>
         </div>
 
-        {{-- ===== TIMELINE PROGRESS ===== --}}
-        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+        {{-- DOKUMEN TERLAMPIR --}}
+        <div class="bg-white rounded-lg shadow border border-gray-100 p-6">
             <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                <i class="fas fa-stream text-blue-500"></i> Timeline Progress
+                <i class="fas fa-folder-open text-yellow-500"></i> Dokumen Lampiran
             </h3>
-            @if(count($timeline))
-            <div class="overflow-x-auto relative">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-100 sticky top-0 shadow-sm">
-                        <tr class="text-gray-600 uppercase text-xs tracking-wider">
-                            <th class="px-6 py-3 text-left">Tanggal</th>
-                            <th class="px-6 py-3 text-left">Fisik (%)</th>
-                            <th class="px-6 py-3 text-left">Anggaran (Rp)</th>
-                            <th class="px-6 py-3 text-left">Lokasi</th>
-                            <th class="px-6 py-3 text-left">Status</th>
-                            <th class="px-6 py-3 text-left">Catatan</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        @foreach($timeline as $row)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-6 py-3">{{ $row['tanggal'] }}</td>
-                            <td class="px-6 py-3">{{ $row['progress_fisik'] }}</td>
-                            <td class="px-6 py-3">
-                                Rp {{ number_format((float)$row['progress_anggaran'],0,',','.') }}
-                            </td>
-                            <td class="px-6 py-3">{{ $row['lokasi'] ?? '-' }}</td>
-                            <td class="px-6 py-3">{{ ucfirst($row['status']) }}</td>
-                            <td class="px-6 py-3 text-gray-700">{{ $row['catatan'] ?? '-' }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+            @if($realisasi->dokumens->count())
+            <ul class="divide-y divide-gray-200 text-sm">
+                @foreach($realisasi->dokumens as $dokumen)
+                <li class="flex justify-between items-center py-2">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-file-pdf text-red-500"></i>
+                        <span>{{ $dokumen->nama_file }}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <a href="{{ route('realisasi.preview', [$realisasi, $dokumen]) }}"
+                            class="text-blue-600 hover:underline text-xs">
+                            <i class="fas fa-eye mr-1"></i>Preview
+                        </a>
+                        <a href="{{ route('realisasi.download', [$realisasi, $dokumen]) }}"
+                            class="text-green-600 hover:underline text-xs">
+                            <i class="fas fa-download mr-1"></i>Download
+                        </a>
+                    </div>
+                </li>
+                @endforeach
+            </ul>
             @else
-            <div class="text-sm text-gray-500">Belum ada realisasi tercatat.</div>
+            <p class="text-sm text-gray-500">Belum ada dokumen terlampir.</p>
             @endif
         </div>
-
-        {{-- ===== FORM EVALUASI UNTUK ADMIN (minimalis pendek) ===== --}}
-        @auth
-        @if(auth()->user()->role === 'admin')
-        <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition p-6">
-            <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                <i class="fas fa-edit text-blue-500"></i> Input Arahan
-            </h3>
-
-            {{-- Flash message --}}
-            @if(session('success'))
-            <div class="mb-3 p-3 rounded bg-green-50 text-green-700 text-sm">{{ session('success') }}</div>
-            @endif
-            @if(session('error'))
-            <div class="mb-3 p-3 rounded bg-red-50 text-red-700 text-sm">{{ session('error') }}</div>
-            @endif
-
-            <form action="{{ route('monitoring.evaluasi', $kegiatan) }}" method="POST" class="space-y-4">
-                @csrf
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {{-- Status --}}
-                    <div class="flex flex-col">
-                        <label class="text-xs text-gray-500 mb-1">Status</label>
-                        <select name="status_evaluasi" class="form-minimal" required>
-                            <option value="on_track">On Track</option>
-                            <option value="terlambat">Terlambat</option>
-                            <option value="tidak_sesuai">Tidak Sesuai</option>
-                        </select>
-                    </div>
-
-                    {{-- Tanggal --}}
-                    <div class="flex flex-col">
-                        <label class="text-xs text-gray-500 mb-1">Tanggal</label>
-                        <input type="date" name="tanggal_evaluasi" class="form-minimal"
-                            value="{{ now()->format('Y-m-d') }}" required>
-                    </div>
-
-                    {{-- Rekomendasi --}}
-                    <div class="flex flex-col">
-                        <label class="text-xs text-gray-500 mb-1">Rekomendasi</label>
-                        <input type="text" name="rekomendasi" class="form-minimal" placeholder="Opsional...">
-                    </div>
-                </div>
-
-                {{-- Arahan --}}
-                <div class="flex flex-col">
-                    <label class="text-xs text-gray-500 mb-1">Arahan</label>
-                    <textarea name="catatan_evaluasi" rows="3" class="form-minimal resize-none"
-                        placeholder="Tuliskan evaluasi atau arahan..." required></textarea>
-                    <p class="text-[11px] text-gray-400 mt-1">Minimal 10 karakter.</p>
-                </div>
-
-                <div class="flex justify-end pt-3">
-                    <button type="submit" class="btn-minimal flex items-center gap-2">
-                        <i class="fas fa-save"></i> Simpan
-                    </button>
-                </div>
-            </form>
-        </div>
-        @endif
-        @endauth
     </div>
 </x-app-layout>

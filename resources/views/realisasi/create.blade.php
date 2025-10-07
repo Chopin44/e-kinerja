@@ -86,7 +86,7 @@
                         <label class="block text-sm font-medium text-gray-700">Upload Dokumen</label>
                         <input type="file" name="dokumen[]" multiple
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600">
-                        <p class="text-xs text-gray-500 mt-1">Format: PDF, JPG, PNG, DOC, DOCX. Maks 10MB per file.</p>
+                        <p class="text-xs text-gray-500 mt-1">Format: PDF, JPG, PNG. Maks 10MB per file.</p>
                         @error('dokumen.*')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>

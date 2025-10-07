@@ -52,9 +52,9 @@
                     </select>
                 </div>
                 <div class="flex items-end">
-                    <button type="submit" class="btn-primary w-full">
-                        <i class="fas fa-search mr-2"></i>
-                        Filter
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-search mr-2"></i>Filter
                     </button>
                 </div>
             </form>
@@ -66,17 +66,17 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Kegiatan</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Bidang</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Target</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Progress</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Aksi</th>
                         </tr>
                     </thead>
@@ -131,16 +131,17 @@
                                 ];
                                 @endphp
                                 <span
-                                    class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $statusClasses[$kegiatan->status] ?? 'bg-gray-100 text-gray-800' }}">
+                                    class="px-2 inline-flex text-md leading-5 font-semibold rounded-lg {{ $statusClasses[$kegiatan->status] ?? 'bg-gray-100 text-gray-800' }}">
                                     {{ ucfirst($kegiatan->status) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-sm space-y-1">
+                            <td class="px-6 py-4 text-sm space-y-1 space-x-2">
                                 <a href="{{ route('kegiatan.show', $kegiatan) }}" class="btn-primary text-xs px-3 py-1">
                                     <i class="fas fa-eye mr-1"></i> Detail
                                 </a>
                                 @can('update', $kegiatan)
-                                <a href="{{ route('kegiatan.edit', $kegiatan) }}" class="btn-warning text-xs px-3 py-1">
+                                <a href="{{ route('kegiatan.edit', $kegiatan) }}"
+                                    class="btn-secondary text-xs px-3 py-1">
                                     <i class="fas fa-edit mr-1"></i> Edit
                                 </a>
                                 @endcan

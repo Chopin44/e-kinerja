@@ -61,9 +61,9 @@
 
                 {{-- Tombol Filter --}}
                 <div class="flex items-end">
-                    <button type="submit" class="btn-primary w-full">
-                        <i class="fas fa-search mr-2"></i>
-                        Filter
+                    <button type="submit"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-search mr-2"></i>Filter
                     </button>
                 </div>
             </form>

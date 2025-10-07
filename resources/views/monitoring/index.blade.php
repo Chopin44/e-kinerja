@@ -117,14 +117,36 @@
                         <td class="px-6 py-4 text-sm text-gray-900">{{ $item->bidang->nama ?? '-' }}</td>
                         <td class="px-6 py-4 text-sm text-gray-900">{{ $item->periode ?? '-' }}</td>
                         <td class="px-6 py-4">
-                            @if($item->status == 'on_track')
-                            <span class="status-badge status-on-track">On Track</span>
-                            @elseif($item->status == 'late')
-                            <span class="status-badge status-warning">Terlambat</span>
-                            @elseif($item->status == 'problem')
-                            <span class="status-badge status-danger">Bermasalah</span>
+                            @if ($item->status == 'on_track')
+                            <span
+                                class="inline-flex items-center px-2 py-1 text-md font-semibold rounded-lg bg-green-100 text-green-700">
+                                <i class="fas fa-check-circle mr-1"></i> On Track
+                            </span>
+                            @elseif ($item->status == 'late')
+                            <span
+                                class="inline-flex items-center px-2 py-1 text-md font-semibold rounded-lg bg-yellow-100 text-yellow-700">
+                                <i class="fas fa-clock mr-1"></i> Terlambat
+                            </span>
+                            @elseif ($item->status == 'problem')
+                            <span
+                                class="inline-flex items-center px-2 py-1 text-md font-semibold rounded-lg bg-red-100 text-red-700">
+                                <i class="fas fa-exclamation-circle mr-1"></i> Bermasalah
+                            </span>
+                            @elseif ($item->status == 'aktif')
+                            <span
+                                class="inline-flex items-center px-2 py-1 text-md font-semibold rounded-lg bg-green-500 text-white">
+                                Aktif
+                            </span>
+                            @elseif ($item->status == 'selesai')
+                            <span
+                                class="inline-flex items-center px-2 py-1 text-md font-semibold rounded-lg bg-gray-200 text-gray-800">
+                                <i class="fas fa-flag-checkered mr-1"></i> Selesai
+                            </span>
                             @else
-                            <span class="status-badge bg-gray-200 text-gray-700">{{ $item->status ?? '-' }}</span>
+                            <span
+                                class="inline-flex items-center px-2 py-1 text-md font-semibold rounded-lg bg-gray-100 text-gray-700">
+                                {{ ucfirst($item->status ?? '-') }}
+                            </span>
                             @endif
                         </td>
                         <td class="px-6 py-4 text-right space-x-3">
