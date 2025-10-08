@@ -21,17 +21,35 @@
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow p-6">
             <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                {{-- === BIDANG === --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Bidang</label>
-                    <select name="bidang_id" class="form-select">
+                    <select name="bidang_id" class="form-select" @if(Auth::user()->role !== 'admin') disabled @endif>
+                        @if(Auth::user()->role === 'admin')
                         <option value="">Semua Bidang</option>
                         @foreach($bidangs as $bidang)
                         <option value="{{ $bidang->id }}" {{ request('bidang_id')==$bidang->id ? 'selected' : '' }}>
                             {{ $bidang->nama }}
                         </option>
                         @endforeach
+                        @else
+                        <option value="{{ Auth::user()->bidang_id }}" selected>
+                            {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
+                        </option>
+                        @endif
                     </select>
+
+                    {{-- Hidden input agar bidang tetap terkirim untuk staf/pimpinan --}}
+                    @if(Auth::user()->role !== 'admin')
+                    <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
+                    <p class="text-xs text-gray-500 mt-1 flex items-center">
+                        <i class="fas fa-lock text-gray-400 mr-1"></i> Bidang Anda telah dikunci otomatis.
+                    </p>
+                    @endif
                 </div>
+
+                {{-- === TAHUN === --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tahun</label>
                     <select name="tahun" class="form-select">
@@ -42,6 +60,8 @@
                             @endfor
                     </select>
                 </div>
+
+                {{-- === STATUS === --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                     <select name="status" class="form-select">
@@ -51,6 +71,8 @@
                         <option value="selesai" {{ request('status')=='selesai' ? 'selected' : '' }}>Selesai</option>
                     </select>
                 </div>
+
+                {{-- === TOMBOL FILTER === --}}
                 <div class="flex items-end">
                     <button type="submit"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
@@ -86,7 +108,8 @@
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">{{ $kegiatan->nama }}</div>
                                 <div class="text-sm text-gray-500">Staf Admin: {{ $kegiatan->user->name }}</div>
-                                <div class="text-xs text-gray-400">{{ ucwords(str_replace('_', ' ', $kegiatan->kategori))}}</div>
+                                <div class="text-xs text-gray-400">{{ ucwords(str_replace('_', ' ',
+                                    $kegiatan->kategori))}}</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ $kegiatan->bidang->nama }}
@@ -94,7 +117,8 @@
                             <td class="px-6 py-4 text-sm">
                                 <div>Fisik: {{ $kegiatan->target_fisik }}%</div>
                                 <div>Anggaran: </div>
-                                <div class="whitespace-nowrap">Rp {{ number_format($kegiatan->target_anggaran, 0, ',', '.') }}</div>
+                                <div class="whitespace-nowrap">Rp {{ number_format($kegiatan->target_anggaran, 0, ',',
+                                    '.') }}</div>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="space-y-2">
@@ -137,28 +161,32 @@
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-sm">
-                            <div class="flex items-center space-x-2">
-                                <a href="{{ route('kegiatan.show', $kegiatan) }}" class="btn-primary text-xs px-3 py-1 inline-flex items-center">
-                                    <i class="fas fa-eye mr-1"></i> Detail
-                                </a>
+                                <div class="flex items-center space-x-2">
+                                    <a href="{{ route('kegiatan.show', $kegiatan) }}"
+                                        class="btn-primary text-xs px-3 py-1 inline-flex items-center">
+                                        <i class="fas fa-eye mr-1"></i> Detail
+                                    </a>
 
-                                @can('update', $kegiatan)
-                                <a href="{{ route('kegiatan.edit', $kegiatan) }}" class="btn-secondary text-xs px-3 py-1 inline-flex items-center">
-                                    <i class="fas fa-edit mr-1"></i> Edit
-                                </a>
-                                @endcan
+                                    @can('update', $kegiatan)
+                                    <a href="{{ route('kegiatan.edit', $kegiatan) }}"
+                                        class="btn-secondary text-xs px-3 py-1 inline-flex items-center">
+                                        <i class="fas fa-edit mr-1"></i> Edit
+                                    </a>
+                                    @endcan
 
-                                @can('delete', $kegiatan)
-                                <form action="{{ route('kegiatan.destroy', $kegiatan) }}" method="POST" class="inline-flex items-center">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-danger text-xs px-3 py-1 inline-flex items-center"
-                                        onclick="return confirm('Yakin ingin menghapus kegiatan ini?')">
-                                        <i class="fas fa-trash-alt mr-1"></i> Hapus
-                                    </button>
-                                </form>
-                                @endcan
-                            </div>
+                                    @can('delete', $kegiatan)
+                                    <form action="{{ route('kegiatan.destroy', $kegiatan) }}" method="POST"
+                                        class="inline-flex items-center">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="btn-danger text-xs px-3 py-1 inline-flex items-center"
+                                            onclick="return confirm('Yakin ingin menghapus kegiatan ini?')">
+                                            <i class="fas fa-trash-alt mr-1"></i> Hapus
+                                        </button>
+                                    </form>
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                         @empty
@@ -176,7 +204,7 @@
             </div>
 
             <!-- Pagination -->
-            <div class="bg-white px-4 py-3 border-t">
+            <div class="bg-white px-4 py-3 border-t custom-pagination">
                 {{ $kegiatans->withQueryString()->links() }}
             </div>
         </div>

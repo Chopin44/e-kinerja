@@ -29,11 +29,14 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     | Semua route di dalam group ini hanya bisa diakses user dengan role "admin"
     */
+
+
     Route::middleware(['role:admin'])->group(function () {
         // Manajemen User
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
             ->name('users.toggle-status');
+        Route::patch('users/{user}/toggle', [UserController::class, 'toggleActive'])->name('users.toggle');
 
         // Manajemen Evaluasi (opsional, jika ingin CRUD penuh)
         Route::resource('evaluasi', EvaluasiController::class)->except(['show']);

@@ -1,20 +1,32 @@
 <div class="space-y-6">
     @php
     use Carbon\Carbon;
+
     $periodeFormat = isset($periode)
     ? (strlen($periode) === 7
     ? Carbon::parse($periode)->translatedFormat('F Y')
     : Carbon::parse($periode . '-01')->translatedFormat('Y'))
     : now()->translatedFormat('F Y');
+
+    // Tambahan khusus triwulan
+    if ($jenis_laporan === 'triwulan') {
+    $quarter = $data['quarter'] ?? ceil(Carbon::parse($periode)->month / 3);
+    $map = [
+    1 => 'Triwulan I (Januari – Maret)',
+    2 => 'Triwulan II (April – Juni)',
+    3 => 'Triwulan III (Juli – September)',
+    4 => 'Triwulan IV (Oktober – Desember)',
+    ];
+    $periodeFormat = $map[$quarter] . ' ' . (Carbon::parse($periode)->year);
+    }
     @endphp
 
-    {{-- ===== HEADER ===== --}}
     <div class="text-center border-b pb-4">
         <h2 class="text-2xl font-bold text-gray-900 tracking-wide uppercase">LAPORAN KINERJA</h2>
-        <p class="text-gray-600">Periode: {{ $periodeFormat }}</p>
-        <p class="text-gray-500 italic">Jenis: {{ ucwords(str_replace('_', ' ', $jenis_laporan)) }}</p>
+        <p class="text-gray-700 text-lg font-semibold">
+            Periode: {{ $periodeFormat }}
+        </p>
     </div>
-
     {{-- ===== KONTEN BERDASARKAN JENIS ===== --}}
     @switch($jenis_laporan)
 

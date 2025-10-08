@@ -19,6 +19,7 @@
         "vite": "^7.0.4"
     },
     "dependencies": {
-        "prettier-plugin-blade": "^2.1.21"
+        "prettier-plugin-blade": "^2.1.21",
+        "sweetalert2": "^11.25.0"
     }
 }

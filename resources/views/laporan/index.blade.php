@@ -175,7 +175,7 @@
                 <body>
                     <div style="text-align:center;margin-bottom:16px;">
                         <img src="{{ asset('images/dinporapar.png') }}" class="w-16 mx-auto mb-2">
-                        <h2 style="font-weight:bold;">Laporan Kinerja DINPORAPAR</h2>
+                        <h2 style="font-weight:bold;">Dinas Kepemudaan dan Olahraga dan Pariwisata</h2>
                     </div>
                     ${reportContent.innerHTML}
                     <script>window.onload=function(){setTimeout(()=>window.print(),600)}<\/script>

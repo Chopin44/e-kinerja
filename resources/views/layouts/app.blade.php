@@ -74,12 +74,12 @@
                         <i class="fas fa-chart-line mr-3"></i> Dashboard
                     </a>
 
-                    @can('admin')
+                    @role('admin')
                     <a href="{{ route('users.index') }}"
                         class="nav-link block px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-20 {{ request()->routeIs('users.*') ? 'active' : '' }}">
                         <i class="fas fa-users mr-3"></i> Kelola Pengguna
                     </a>
-                    @endcan
+                    @endrole
 
                     <a href="{{ route('kegiatan.index') }}"
                         class="nav-link block px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-20 {{ request()->routeIs('kegiatan.*') ? 'active' : '' }}">
@@ -132,18 +132,7 @@
 
                     <!-- Kanan: tahun & user -->
                     <div class="flex items-center gap-6">
-                        <!-- Tahun aktif -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium text-gray-700 whitespace-nowrap">Tahun:</label>
-                            <select id="yearSelector"
-                                class="border border-gray-300 rounded-md px-3 py-1 text-sm min-w-[100px] focus:ring-blue-500 focus:border-blue-500">
-                                @for($year = date('Y') - 2; $year <= date('Y') + 2; $year++) <option value="{{ $year }}"
-                                    {{ $year==date('Y') ? 'selected' : '' }}>
-                                    {{ $year }}
-                                    </option>
-                                    @endfor
-                            </select>
-                        </div>
+
 
                         <!-- User info -->
                         <div class="flex items-center gap-3">

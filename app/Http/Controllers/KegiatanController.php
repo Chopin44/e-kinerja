@@ -18,32 +18,38 @@ class KegiatanController extends Controller
     public function index(Request $request)
     {
         $query = Kegiatan::with(['bidang', 'user', 'realisasis']);
-        
-        // Filter berdasarkan bidang jika user adalah staf
-        if (Auth::user()->role === 'staf') {
-            $query->where('bidang_id', Auth::user()->bidang_id);
-        }
-        
-        // Filter berdasarkan parameter
-        if ($request->filled('bidang_id')) {
+        $user = Auth::user();
+
+        // 🔒 Kunci bidang sesuai role
+        if ($user->role === 'staf') {
+            // Hanya tampilkan kegiatan dari bidang staf itu
+            $query->where('bidang_id', $user->bidang_id);
+        } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
+            // Pimpinan juga dibatasi ke bidangnya sendiri
+            $query->where('bidang_id', $user->bidang_id);
+        } elseif ($request->filled('bidang_id')) {
+            // Admin bisa filter manual
             $query->byBidang($request->bidang_id);
         }
-        
+
+        // Filter tahun dan status seperti biasa
         if ($request->filled('tahun')) {
             $query->byTahun($request->tahun);
         } else {
             $query->byTahun(Carbon::now()->year);
         }
-        
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        
+
         $kegiatans = $query->paginate(10);
         $bidangs = Bidang::active()->get();
-        
+
         return view('kegiatan.index', compact('kegiatans', 'bidangs'));
     }
+
+
     
     public function create()
     {
