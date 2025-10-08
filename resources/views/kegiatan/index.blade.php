@@ -19,35 +19,43 @@
         </div>
 
         <!-- Filters -->
-        <div class="bg-white rounded-lg shadow p-6">
-            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-lg shadow p-8">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+
 
                 {{-- === BIDANG === --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Bidang</label>
-                    <select name="bidang_id" class="form-select" @if(Auth::user()->role !== 'admin') disabled @endif>
-                        @if(Auth::user()->role === 'admin')
-                        <option value="">Semua Bidang</option>
-                        @foreach($bidangs as $bidang)
-                        <option value="{{ $bidang->id }}" {{ request('bidang_id')==$bidang->id ? 'selected' : '' }}>
-                            {{ $bidang->nama }}
-                        </option>
-                        @endforeach
-                        @else
-                        <option value="{{ Auth::user()->bidang_id }}" selected>
-                            {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
-                        </option>
-                        @endif
-                    </select>
 
-                    {{-- Hidden input agar bidang tetap terkirim untuk staf/pimpinan --}}
-                    @if(Auth::user()->role !== 'admin')
-                    <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
-                    <p class="text-xs text-gray-500 mt-1 flex items-center">
-                        <i class="fas fa-lock text-gray-400 mr-1"></i> Bidang Anda telah dikunci otomatis.
-                    </p>
-                    @endif
+                    <div class="relative w-full">
+                        <select name="bidang_id" class="form-select w-full" @if(Auth::user()->role !== 'admin') disabled
+                            @endif>
+                            @if(Auth::user()->role === 'admin')
+                            <option value="">Semua Bidang</option>
+                            @foreach($bidangs as $bidang)
+                            <option value="{{ $bidang->id }}" {{ request('bidang_id')==$bidang->id ? 'selected' : '' }}>
+                                {{ $bidang->nama }}
+                            </option>
+                            @endforeach
+                            @else
+                            <option value="{{ Auth::user()->bidang_id }}" selected>
+                                {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
+                            </option>
+                            @endif
+                        </select>
+
+                        @if(Auth::user()->role !== 'admin')
+                        <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
+                        <p
+                            class="text-xs text-gray-500 flex items-center mt-1.5 sm:absolute sm:top-full sm:left-0 sm:right-0 sm:mt-2">
+                            <i class="fas fa-lock text-gray-400 mr-1"></i>
+                            Bidang Anda telah dikunci otomatis.
+                        </p>
+                        @endif
+                    </div>
                 </div>
+
+
 
                 {{-- === TAHUN === --}}
                 <div>
@@ -73,9 +81,9 @@
                 </div>
 
                 {{-- === TOMBOL FILTER === --}}
-                <div class="flex items-end">
+                <div>
                     <button type="submit"
-                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        class="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         <i class="fas fa-search mr-2"></i>Filter
                     </button>
                 </div>
