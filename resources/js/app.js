@@ -48,3 +48,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+
+import Chart from 'chart.js/auto';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('anggaranPieChart');
+    if (!el) return;
+
+    const totalPagu = parseFloat(el.dataset.totalPagu);
+    const totalRealisasi = parseFloat(el.dataset.totalRealisasi);
+    const totalSisa = totalPagu - totalRealisasi;
+
+    new Chart(el, {
+        type: 'doughnut',
+        data: {
+            labels: ['Realisasi', 'Sisa Anggaran'],
+            datasets: [{
+                data: [totalRealisasi, totalSisa],
+                backgroundColor: [
+                    '#16A34A', // hijau kontras (realisasi)
+                    '#DC2626'  // merah tegas (sisa anggaran)
+                ],
+                borderColor: '#ffffff',
+                borderWidth: 2,
+                hoverOffset: 10,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%', // biar terlihat lebih elegan
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#374151', // abu gelap
+                        font: {
+                            size: 13,
+                            family: "'Inter', sans-serif"
+                        },
+                        padding: 16
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#111827',
+                    titleColor: '#fff',
+                    bodyColor: '#d1d5db',
+                    bodyFont: { size: 13 },
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw || 0;
+                            return `Rp ${value.toLocaleString('id-ID')}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+
+
+

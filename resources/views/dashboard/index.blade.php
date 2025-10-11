@@ -54,6 +54,30 @@
             </div>
         </div>
 
+        <!-- Diagram Total Pagu vs Realisasi -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="text-center mb-6">
+                <h3 class="text-lg font-semibold text-gray-800">Total Anggaran vs Realisasi</h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Dari total pagu
+                    <b>Rp {{ number_format($totalPagu, 0, ',', '.') }}</b>,
+                    sudah terealisasi
+                    <b>Rp {{ number_format($totalRealisasi, 0, ',', '.') }}</b>
+                    ({{ number_format($persentaseRealisasi, 1) }}%)
+                </p>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="flex justify-center items-center">
+                <div class="relative w-44 h-44 sm:w-56 sm:h-56 md:w-64 md:h-64">
+                    <canvas id="anggaranPieChart" data-total-pagu="{{ $totalPagu }}"
+                        data-total-realisasi="{{ $totalRealisasi }}" class="w-full h-full">
+                    </canvas>
+                </div>
+            </div>
+        </div>
+
+
         <!-- Capaian per Bidang -->
         <div class="bg-white rounded-lg shadow">
             <div class="p-6 border-b border-gray-200">

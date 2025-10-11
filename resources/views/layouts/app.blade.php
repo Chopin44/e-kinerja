@@ -138,12 +138,21 @@
                         <div class="flex items-center gap-3">
                             <div class="text-right hidden sm:block">
                                 <div class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</div>
-                                <div class="text-xs text-gray-500">{{ Auth::user()->bidang->nama ?? 'Admin' }}</div>
+                                <div class="text-xs text-gray-500">
+                                    @if(Auth::user()->role === 'admin')
+                                    Kepala Dinas
+                                    @else
+                                    {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
+                                    @endif
+                                </div>
                             </div>
+
                             <div class="w-9 h-9 bg-blue-500 rounded-full flex items-center justify-center">
-                                <span class="text-white text-sm font-semibold">{{ strtoupper(substr(Auth::user()->name,
-                                    0, 1)) }}</span>
+                                <span class="text-white text-sm font-semibold">
+                                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                                </span>
                             </div>
+
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit"
@@ -152,6 +161,7 @@
                                 </button>
                             </form>
                         </div>
+
                     </div>
                 </div>
             </nav>

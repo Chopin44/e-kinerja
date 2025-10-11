@@ -35,20 +35,14 @@
                             placeholder="Masukkan NIP" value="{{ old('nip') }}">
                     </div>
 
-                    <!-- Nomor HP -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Nomor HP</label>
-                        <input type="text" name="phone"
-                            class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            placeholder="Masukkan nomor HP" value="{{ old('phone') }}">
-                    </div>
 
-                    <!-- Email -->
+
+                    <!-- Username -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" name="email"
+                        <label class="block text-sm font-medium text-gray-700">Username</label>
+                        <input type="text" name="username"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            placeholder="Alamat email pengguna" value="{{ old('email') }}" required>
+                            placeholder="Masukkan username" value="{{ old('username') }}" required>
                     </div>
 
                     <!-- Bidang -->

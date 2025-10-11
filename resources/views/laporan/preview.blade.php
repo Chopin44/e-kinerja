@@ -124,26 +124,39 @@
                     <th class="px-4 py-2 text-left">Bidang</th>
                     <th class="px-4 py-2 text-left">Nama Kegiatan</th>
                     <th class="px-4 py-2 text-left">Jumlah Anggaran</th>
-                    <th class="px-4 py-2 text-left">Realisasi Triwulan</th>
+                    <th class="px-4 py-2 text-left">Realisasi Triwulan (Rp)</th>
+                    <th class="px-4 py-2 text-left">Persentase Realisasi</th>
                     <th class="px-4 py-2 text-left">Sisa Anggaran</th>
-                    <th class="px-4 py-2 text-left">Deviasi</th>
+                    <th class="px-4 py-2 text-left">Deviasi (Rp)</th>
+                    <th class="px-4 py-2 text-left">Deviasi (%)</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($data['kegiatans'] ?? [] as $k)
+                @php
+                $persenRealisasi = $k['anggaran'] > 0 ? ($k['realisasi'] / $k['anggaran']) * 100 : 0;
+                $persenDeviasi = $k['anggaran'] > 0 ? ($k['deviasi'] / $k['anggaran']) * 100 : 0;
+                @endphp
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-2">{{ $k['bidang'] }}</td>
                     <td class="px-4 py-2">{{ $k['nama'] }}</td>
                     <td class="px-4 py-2">Rp {{ number_format($k['anggaran'], 0, ',', '.') }}</td>
                     <td class="px-4 py-2">Rp {{ number_format($k['realisasi'], 0, ',', '.') }}</td>
+                    <td
+                        class="px-4 py-2 {{ $persenRealisasi >= 80 ? 'text-green-600' : ($persenRealisasi >= 50 ? 'text-yellow-600' : 'text-red-600') }}">
+                        {{ number_format($persenRealisasi, 1) }}%
+                    </td>
                     <td class="px-4 py-2">Rp {{ number_format($k['sisa'], 0, ',', '.') }}</td>
                     <td class="px-4 py-2 {{ $k['deviasi'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                         Rp {{ number_format($k['deviasi'], 0, ',', '.') }}
                     </td>
+                    <td class="px-4 py-2 {{ $persenDeviasi >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                        {{ number_format($persenDeviasi, 1) }}%
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="text-center py-4 text-gray-500">
+                    <td colspan="8" class="text-center py-4 text-gray-500">
                         Tidak ada data kegiatan pada triwulan ini.
                     </td>
                 </tr>
@@ -155,8 +168,9 @@
 
 
 
+
     {{-- ======================== TAHUNAN ======================== --}}
-    @case('tahunan')
+    {{-- @case('tahunan')
     <div class="overflow-x-auto">
         <table class="min-w-full border text-sm divide-y divide-gray-200">
             <thead class="bg-gray-50 text-gray-700 uppercase">
@@ -187,7 +201,7 @@
             </tbody>
         </table>
     </div>
-    @break
+    @break --}}
 
     @endswitch
 

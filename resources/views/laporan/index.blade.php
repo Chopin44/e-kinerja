@@ -34,7 +34,7 @@
                             <option value="kinerja_bidang">Kinerja Bidang</option>
                             <option value="bulanan">Rekap Bulanan</option>
                             <option value="triwulan">Rekap Triwulan</option>
-                            <option value="tahunan">Rekap Tahunan</option>
+                            {{-- <option value="tahunan">Rekap Tahunan</option> --}}
                         </select>
                     </div>
 

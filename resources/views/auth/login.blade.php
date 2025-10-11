@@ -39,19 +39,20 @@
         <form method="POST" action="{{ route('login') }}" class="space-y-5">
             @csrf
 
-            <!-- Email -->
+            <!-- Username -->
             <div>
-                <label for="email" class="block font-medium text-sm text-blue-700 dark:text-blue-300 mb-1">
-                    Email
+                <label for="username" class="block font-medium text-sm text-blue-700 dark:text-blue-300 mb-1">
+                    Username
                 </label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
-                    placeholder="Masukkan email Anda" class="w-full border border-blue-300 bg-blue-50/30 text-gray-900 rounded-lg px-4 py-2 
-                           placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none
-                           dark:bg-gray-800 dark:border-blue-700 dark:text-gray-100 dark:focus:ring-blue-400">
-                @error('email')
+                <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus
+                    placeholder="Masukkan username Anda" class="w-full border border-blue-300 bg-blue-50/30 text-gray-900 rounded-lg px-4 py-2 
+               placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-400 focus:outline-none
+               dark:bg-gray-800 dark:border-blue-700 dark:text-gray-100 dark:focus:ring-blue-400">
+                @error('username')
                 <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
                 @enderror
             </div>
+
 
             <!-- Password -->
             <div>
@@ -74,11 +75,11 @@
                     <span class="ml-2 text-gray-700 dark:text-gray-400">Ingat saya</span>
                 </label>
 
-                @if (Route::has('password.request'))
+                {{-- @if (Route::has('password.request'))
                 <a href="{{ route('password.request') }}" class="text-blue-600 hover:underline">
                     Lupa sandi?
                 </a>
-                @endif
+                @endif --}}
             </div>
 
             <!-- Tombol Login -->

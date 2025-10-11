@@ -25,7 +25,7 @@
                         <div class="font-semibold">{{ $kegiatan->bidang->nama ?? '-' }}</div>
                     </div>
                     <div>
-                        <div class="text-sm text-gray-600">Penanggung Jawab</div>
+                        <div class="text-sm text-gray-600">Staf Admin</div>
                         <div class="font-semibold">{{ $kegiatan->user->name ?? '-' }}</div>
                     </div>
                     <div>
@@ -177,12 +177,6 @@
                         @error('tanggal_evaluasi')<div class="text-sm text-red-600">{{ $message }}</div>@enderror
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Rekomendasi (opsional)</label>
-                        <input type="text" name="rekomendasi" class="form-input"
-                            placeholder="Mis: Segera selesaikan sesuai target..." value="{{ old('rekomendasi') }}">
-                        @error('rekomendasi')<div class="text-sm text-red-600">{{ $message }}</div>@enderror
-                    </div>
                 </div>
 
                 <div>
