@@ -27,9 +27,11 @@
                             placeholder="Masukkan nama kegiatan" value="{{ old('nama') }}" required>
                     </div>
 
-                    <!-- Bidang -->
+                    {{-- === BIDANG === --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Bidang</label>
+
+                        @if(Auth::user()->hasRole('admin'))
                         <select name="bidang_id"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
@@ -40,11 +42,19 @@
                             </option>
                             @endforeach
                         </select>
+                        @else
+                        <input type="text" value="{{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}"
+                            class="w-full mt-1 border-gray-300 text-sm rounded-md bg-gray-100 cursor-not-allowed"
+                            readonly>
+                        <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
+                        @endif
                     </div>
 
-                    <!-- Staf Admin -->
+                    {{-- === STAF ADMIN === --}}
                     <div class="lg:col-span-2">
                         <label class="block text-sm font-medium text-gray-700">Staf Admin</label>
+
+                        @if(Auth::user()->hasRole('admin'))
                         <select name="user_id"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
@@ -55,6 +65,12 @@
                             </option>
                             @endforeach
                         </select>
+                        @else
+                        <input type="text" value="{{ Auth::user()->name }}"
+                            class="w-full mt-1 border-gray-300 text-sm rounded-md bg-gray-100 cursor-not-allowed"
+                            readonly>
+                        <input type="hidden" name="user_id" value="{{ Auth::user()->id }}">
+                        @endif
                     </div>
 
                     <!-- Kategori -->
@@ -64,12 +80,11 @@
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
                             <option value="">Pilih Kategori</option>
-                            <option value="pengadaan_langsung" {{ old('kategori')=='pengadaan_langsung' ? 'selected' : ''
-                                }}>Pengadaan Langsung</option>
-                            <option value="swakelola" {{ old('kategori')=='swakelola' ? 'selected'
-                                : '' }}>Swakelola</option>
-                            <option value="pokir" {{ old('kategori')=='pokir' ? 'selected' : ''
-                                }}>Pokir</option>
+                            <option value="pengadaan_langsung" {{ old('kategori')=='pengadaan_langsung' ? 'selected'
+                                : '' }}>Pengadaan Langsung</option>
+                            <option value="swakelola" {{ old('kategori')=='swakelola' ? 'selected' : '' }}>Swakelola
+                            </option>
+                            <option value="pokir" {{ old('kategori')=='pokir' ? 'selected' : '' }}>Pokir</option>
                         </select>
                     </div>
 

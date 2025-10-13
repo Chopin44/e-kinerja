@@ -36,7 +36,7 @@
                             placeholder="Masukkan NIP" value="{{ old('nip', $user->nip) }}">
                     </div>
 
-                    <!-- Email -->
+                    <!-- Username -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Username</label>
                         <input type="text" name="username"
@@ -51,7 +51,7 @@
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600">
                             <option value="">Tidak ada</option>
                             @foreach($bidangs as $bidang)
-                            <option value="{{ $bidang->id }}" {{ old('bidang_id', $user->bidang_id)==$bidang->id ?
+                            <option value="{{ $bidang->id }}" {{ old('bidang_id', $user->bidang_id) == $bidang->id ?
                                 'selected' : '' }}>
                                 {{ $bidang->nama }}
                             </option>
@@ -59,17 +59,17 @@
                         </select>
                     </div>
 
-                    <!-- Role -->
+                    <!-- Role (Spatie version) -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Role / Hak Akses</label>
                         <select name="role"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
-                            <option value="admin" {{ old('role', $user->role)=='admin' ? 'selected' : '' }}>Admin
+                            @foreach ($roles as $role)
+                            <option value="{{ $role }}" {{ $user->hasRole($role) ? 'selected' : '' }}>
+                                {{ ucfirst($role) }}
                             </option>
-                            <option value="staf" {{ old('role', $user->role)=='staf' ? 'selected' : '' }}>Staf</option>
-                            <option value="pimpinan" {{ old('role', $user->role)=='pimpinan' ? 'selected' : ''
-                                }}>Pimpinan</option>
+                            @endforeach
                         </select>
                     </div>
 

@@ -22,15 +22,15 @@
         <div class="bg-white rounded-lg shadow p-8">
             <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
 
-
                 {{-- === BIDANG === --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Bidang</label>
 
                     <div class="relative w-full">
-                        <select name="bidang_id" class="form-select w-full" @if(Auth::user()->role !== 'admin') disabled
-                            @endif>
-                            @if(Auth::user()->role === 'admin')
+                        <select name="bidang_id" class="form-select w-full" @unless(Auth::user()->hasRole('admin'))
+                            disabled @endunless>
+
+                            @role('admin')
                             <option value="">Semua Bidang</option>
                             @foreach($bidangs as $bidang)
                             <option value="{{ $bidang->id }}" {{ request('bidang_id')==$bidang->id ? 'selected' : '' }}>
@@ -41,27 +41,25 @@
                             <option value="{{ Auth::user()->bidang_id }}" selected>
                                 {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
                             </option>
-                            @endif
+                            @endrole
                         </select>
 
-                        @if(Auth::user()->role !== 'admin')
+                        @unless(Auth::user()->hasRole('admin'))
                         <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
                         <p
                             class="text-xs text-gray-500 flex items-center mt-1.5 sm:absolute sm:top-full sm:left-0 sm:right-0 sm:mt-2">
                             <i class="fas fa-lock text-gray-400 mr-1"></i>
                             Bidang Anda telah dikunci otomatis.
                         </p>
-                        @endif
+                        @endunless
                     </div>
                 </div>
-
-
 
                 {{-- === TAHUN === --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tahun</label>
                     <select name="tahun" class="form-select">
-                        @for($year = date('Y') - 2; $year <= date('Y') + 2; $year++) <option value="{{ $year }}" {{
+                        @for ($year = date('Y') - 2; $year <= date('Y') + 2; $year++) <option value="{{ $year }}" {{
                             request('tahun', date('Y'))==$year ? 'selected' : '' }}>
                             {{ $year }}
                             </option>
@@ -84,11 +82,12 @@
                 <div>
                     <button type="submit"
                         class="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                        <i class="fas fa-search mr-2"></i>Filter
+                        <i class="fas fa-search mr-2"></i> Filter
                     </button>
                 </div>
             </form>
         </div>
+
 
         <!-- Kegiatan Table -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -184,17 +183,19 @@
 
                                     @can('delete', $kegiatan)
                                     <form action="{{ route('kegiatan.destroy', $kegiatan) }}" method="POST"
-                                        class="inline-flex items-center">
+                                        class="inline-flex items-center"
+                                        data-confirm="Menghapus kegiatan <b>{{ $kegiatan->nama }}</b> akan menghapus seluruh data realisasi dan dokumen terkait. Apakah Anda yakin ingin melanjutkan?">
                                         @csrf
                                         @method('DELETE')
+
                                         <button type="submit"
-                                            class="btn-danger text-xs px-3 py-1 inline-flex items-center"
-                                            onclick="return confirm('Yakin ingin menghapus kegiatan ini?')">
+                                            class="btn-danger text-xs px-3 py-1 inline-flex items-center">
                                             <i class="fas fa-trash-alt mr-1"></i> Hapus
                                         </button>
                                     </form>
+
                                     @endcan
-                                </div>
+
                             </td>
                         </tr>
                         @empty

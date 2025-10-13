@@ -20,18 +20,20 @@
                 @method('PUT')
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
+
                     <!-- Nama Kegiatan -->
                     <div class="sm:col-span-2 lg:col-span-3">
                         <label class="block text-sm font-medium text-gray-700">Nama Kegiatan</label>
                         <input type="text" name="nama"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             value="{{ old('nama', $kegiatan->nama) }}" required>
-                        @error('nama')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
-                    <!-- Bidang -->
+                    <!-- BIDANG -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Bidang</label>
+
+                        @if(Auth::user()->hasRole('admin'))
                         <select name="bidang_id"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
@@ -42,12 +44,21 @@
                             </option>
                             @endforeach
                         </select>
-                        @error('bidang_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        @else
+                        <input type="text"
+                            value="{{ $kegiatan->bidang->nama ?? Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}"
+                            class="w-full mt-1 border-gray-300 text-sm rounded-md bg-gray-100 cursor-not-allowed"
+                            readonly>
+                        <input type="hidden" name="bidang_id"
+                            value="{{ $kegiatan->bidang_id ?? Auth::user()->bidang_id }}">
+                        @endif
                     </div>
 
-                    <!-- Penanggung Jawab -->
+                    <!-- STAF ADMIN -->
                     <div class="lg:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Penanggung Jawab</label>
+                        <label class="block text-sm font-medium text-gray-700">Staf Admin</label>
+
+                        @if(Auth::user()->hasRole('admin'))
                         <select name="user_id"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
@@ -58,7 +69,12 @@
                             </option>
                             @endforeach
                         </select>
-                        @error('user_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                        @else
+                        <input type="text" value="{{ $kegiatan->user->name ?? Auth::user()->name }}"
+                            class="w-full mt-1 border-gray-300 text-sm rounded-md bg-gray-100 cursor-not-allowed"
+                            readonly>
+                        <input type="hidden" name="user_id" value="{{ $kegiatan->user_id ?? Auth::user()->id }}">
+                        @endif
                     </div>
 
                     <!-- Kategori -->
@@ -69,13 +85,11 @@
                             required>
                             <option value="pengadaan_langsung" {{ old('kategori', $kegiatan->kategori) ==
                                 'pengadaan_langsung' ? 'selected' : '' }}>Pengadaan Langsung</option>
-                            <option value="swakelola" {{ old('kategori', $kegiatan->kategori) ==
-                                'swakelola' ? 'selected' : '' }}>Swakelola</option>
-                            <option value="pokir" {{ old('kategori', $kegiatan->kategori) ==
-                                'pokir' ? 'selected' : '' }}>Pokir</option>
-            
+                            <option value="swakelola" {{ old('kategori', $kegiatan->kategori) == 'swakelola' ?
+                                'selected' : '' }}>Swakelola</option>
+                            <option value="pokir" {{ old('kategori', $kegiatan->kategori) == 'pokir' ? 'selected' : ''
+                                }}>Pokir</option>
                         </select>
-                        @error('kategori')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Periode -->
@@ -91,7 +105,6 @@
                             <option value="triwulan" {{ old('periode_type', $kegiatan->periode_type) == 'triwulan' ?
                                 'selected' : '' }}>Triwulan</option>
                         </select>
-                        @error('periode_type')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Tahun -->
@@ -106,7 +119,6 @@
                                 </option>
                                 @endfor
                         </select>
-                        @error('tahun')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Target Fisik -->
@@ -115,7 +127,6 @@
                         <input type="number" name="target_fisik" min="0" max="100"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             value="{{ old('target_fisik', $kegiatan->target_fisik) }}" required>
-                        @error('target_fisik')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Target Anggaran -->
@@ -124,7 +135,6 @@
                         <input type="number" name="target_anggaran" min="0"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             value="{{ old('target_anggaran', $kegiatan->target_anggaran) }}" required>
-                        @error('target_anggaran')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Tanggal Mulai -->
@@ -133,7 +143,6 @@
                         <input type="date" name="tanggal_mulai"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             value="{{ old('tanggal_mulai', $kegiatan->tanggal_mulai->format('Y-m-d')) }}" required>
-                        @error('tanggal_mulai')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Tanggal Selesai -->
@@ -142,7 +151,6 @@
                         <input type="date" name="tanggal_selesai"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             value="{{ old('tanggal_selesai', $kegiatan->tanggal_selesai->format('Y-m-d')) }}" required>
-                        @error('tanggal_selesai')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Status -->
@@ -158,7 +166,6 @@
                             <option value="selesai" {{ old('status', $kegiatan->status) == 'selesai' ? 'selected' : ''
                                 }}>Selesai</option>
                         </select>
-                        @error('status')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Deskripsi -->
@@ -167,7 +174,6 @@
                         <textarea name="deskripsi" rows="3"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             placeholder="Deskripsi kegiatan">{{ old('deskripsi', $kegiatan->deskripsi) }}</textarea>
-                        @error('deskripsi')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
 

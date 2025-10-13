@@ -6,19 +6,21 @@ use App\Models\User;
 use App\Models\Bidang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with('bidang')->paginate(10);
+        $users = User::with(['bidang', 'roles'])->paginate(10);
         return view('users.index', compact('users'));
     }
 
     public function create()
     {
         $bidangs = Bidang::active()->get();
-        return view('users.create', compact('bidangs'));
+        $roles = Role::pluck('name'); // ambil nama role yang tersedia
+        return view('users.create', compact('bidangs', 'roles'));
     }
 
     public function store(Request $request)
@@ -32,15 +34,18 @@ class UserController extends Controller
             'password' => 'required|min:6|confirmed',
         ]);
 
-        User::create([
+        // Buat user baru
+        $user = User::create([
             'name' => $request->name,
             'nip' => $request->nip,
             'username' => $request->username,
             'bidang_id' => $request->bidang_id,
-            'role' => $request->role,
             'password' => Hash::make($request->password),
             'is_active' => true,
         ]);
+
+        // Tambahkan role via Spatie
+        $user->assignRole($request->role);
 
         return redirect()->route('users.index')->with('success', 'User berhasil ditambahkan!');
     }
@@ -48,7 +53,8 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $bidangs = Bidang::active()->get();
-        return view('users.edit', compact('user', 'bidangs'));
+        $roles = Role::pluck('name');
+        return view('users.edit', compact('user', 'bidangs', 'roles'));
     }
 
     public function update(Request $request, User $user)
@@ -62,12 +68,15 @@ class UserController extends Controller
             'password' => 'nullable|min:6|confirmed',
         ]);
 
-        $data = $request->only(['name', 'nip', 'username', 'bidang_id', 'role']);
+        $data = $request->only(['name', 'nip', 'username', 'bidang_id']);
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 
         $user->update($data);
+
+        // Sinkronisasi role Spatie (hapus role lama, pasang baru)
+        $user->syncRoles([$request->role]);
 
         return redirect()->route('users.index')->with('success', 'User berhasil diperbarui!');
     }
@@ -89,6 +98,9 @@ class UserController extends Controller
             $kegiatan->delete();
         }
 
+        // Hapus semua role sebelum delete user
+        $user->syncRoles([]);
+
         // Terakhir, hapus user-nya
         $user->delete();
 
@@ -97,7 +109,6 @@ class UserController extends Controller
             'Pengguna dan seluruh data kegiatan, evaluasi, serta realisasi terkait berhasil dihapus.'
         );
     }
-
 
     public function toggleActive(User $user)
     {

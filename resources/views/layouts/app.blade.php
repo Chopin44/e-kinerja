@@ -139,7 +139,7 @@
                             <div class="text-right hidden sm:block">
                                 <div class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</div>
                                 <div class="text-xs text-gray-500">
-                                    @if(Auth::user()->role === 'admin')
+                                    @if(Auth::user()->hasRole('admin'))
                                     Kepala Dinas
                                     @else
                                     {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
@@ -161,6 +161,7 @@
                                 </button>
                             </form>
                         </div>
+
 
                     </div>
                 </div>
