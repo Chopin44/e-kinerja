@@ -23,7 +23,8 @@ class KegiatanController extends Controller
         // 🔒 Kunci bidang sesuai role
         if ($user->role === 'staf') {
             // Hanya tampilkan kegiatan dari bidang staf itu
-            $query->where('bidang_id', $user->bidang_id);
+            $query->where('bidang_id', $user->bidang_id)
+                  ->where('user_id', $user->id);;
         } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
             // Pimpinan juga dibatasi ke bidangnya sendiri
             $query->where('bidang_id', $user->bidang_id);

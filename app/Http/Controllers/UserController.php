@@ -35,7 +35,6 @@ class UserController extends Controller
         User::create([
             'name' => $request->name,
             'nip' => $request->nip,
-            'phone' => $request->phone,
             'username' => $request->username,
             'bidang_id' => $request->bidang_id,
             'role' => $request->role,
@@ -57,13 +56,13 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'nip' => 'nullable|string|max:50',
-            'username' => "required|username|unique:users,username,{$user->id}",
+            'username' => "required|unique:users,username,{$user->id}",
             'bidang_id' => 'nullable|exists:bidangs,id',
             'role' => 'required|in:admin,staf,pimpinan',
             'password' => 'nullable|min:6|confirmed',
         ]);
 
-        $data = $request->only(['name', 'nip', 'phone', 'username', 'bidang_id', 'role']);
+        $data = $request->only(['name', 'nip', 'username', 'bidang_id', 'role']);
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
