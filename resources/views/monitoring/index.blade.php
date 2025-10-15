@@ -54,26 +54,41 @@
             <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Bidang</label>
-                    <select name="bidang_id" class="form-select w-full rounded-md border-gray-300">
+                    <select name="bidang_id" class="form-select w-full rounded-md border-gray-300"
+                        @unless(Auth::user()->hasRole('admin')) disabled @endunless>
+                        @role('admin')
                         <option value="">Semua Bidang</option>
                         @foreach($bidangs as $bidang)
                         <option value="{{ $bidang->id }}" {{ request('bidang_id')==$bidang->id ? 'selected' : '' }}>
                             {{ $bidang->nama }}
                         </option>
                         @endforeach
+                        @else
+                        <option value="{{ Auth::user()->bidang_id }}" selected>
+                            {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
+                        </option>
+                        @endrole
                     </select>
+
+                    @unless(Auth::user()->hasRole('admin'))
+                    <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
+                    @endunless
+
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Periode</label>
                     <select name="periode" class="form-select w-full rounded-md border-gray-300">
                         <option value="">Semua Periode</option>
-                        @foreach(['Q1','Q2','Q3','Q4'] as $q)
-                        <option value="{{ $q }}" {{ request('periode')===$q ? 'selected' : '' }}>Triwulan {{
-                            substr($q,2) }}</option>
+                        @foreach(['Q1' => 'Triwulan 1', 'Q2' => 'Triwulan 2', 'Q3' => 'Triwulan 3', 'Q4' => 'Triwulan
+                        4'] as $key => $label)
+                        <option value="{{ $key }}" {{ request('periode')===$key ? 'selected' : '' }}>
+                            {{ $label }}
+                        </option>
                         @endforeach
                     </select>
                 </div>
+
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>

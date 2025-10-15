@@ -5,51 +5,111 @@ namespace App\Http\Controllers;
 use App\Models\Dokumen;
 use App\Models\Kegiatan;
 use App\Models\Realisasi;
+use App\Models\Bidang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
 
 class RealisasiController extends Controller
 {
     public function index(Request $request)
     {
+        $user = Auth::user();
+
         $query = Realisasi::with(['kegiatan.bidang', 'user', 'dokumens']);
 
-        // Filter berdasarkan bidang jika user adalah staf
-        if (Auth::user()->role === 'staf') {
-            $query->whereHas('kegiatan', function ($q) {
-                $q->where('bidang_id', Auth::user()->bidang_id);
+        // 🔒 Pembatasan data berdasarkan role
+        if ($user->role === 'staf') {
+            // Staf hanya melihat realisasi dari kegiatan yang ia buat sendiri di bidangnya
+            $query->whereHas('kegiatan', function ($q) use ($user) {
+                $q->where('bidang_id', $user->bidang_id)
+                ->where('user_id', $user->id); // ← Tambahkan ini
+            });
+        } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
+            // Pimpinan hanya melihat realisasi dari bidangnya sendiri
+            $query->whereHas('kegiatan', function ($q) use ($user) {
+                $q->where('bidang_id', $user->bidang_id);
+            });
+        } elseif ($request->filled('bidang_id')) {
+            // Admin bisa filter manual berdasarkan bidang
+            $query->whereHas('kegiatan', function ($q) use ($request) {
+                $q->where('bidang_id', $request->bidang_id);
             });
         }
 
+
+        // 🎯 Filter kegiatan
         if ($request->filled('kegiatan_id')) {
             $query->where('kegiatan_id', $request->kegiatan_id);
         }
 
+        // 🎯 Filter status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        $realisasis = $query->paginate(10);
-        $kegiatans  = Kegiatan::aktif()->get();
+        // 🎯 Filter tahun realisasi
+        if ($request->filled('tahun')) {
+            $query->whereYear('tanggal_realisasi', $request->tahun);
+        } else {
+            $query->whereYear('tanggal_realisasi', Carbon::now()->year);
+        }
 
-        return view('realisasi.index', compact('realisasis', 'kegiatans'));
+        // 🔢 Pagination hasil
+        $realisasis = $query->orderByDesc('tanggal_realisasi')->paginate(10);
+
+        // 🔁 Dropdown kegiatan menyesuaikan bidang & role
+        if ($user->role === 'staf') {
+            $kegiatans = Kegiatan::where('bidang_id', $user->bidang_id)
+                ->where('user_id', $user->id)
+                ->aktif()
+                ->get();
+        } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
+            $kegiatans = Kegiatan::where('bidang_id', $user->bidang_id)
+                ->aktif()
+                ->get();
+        } else {
+            $kegiatans = Kegiatan::aktif()->get();
+        }
+
+        // Untuk dropdown bidang (khusus admin)
+        $bidangs = Bidang::active()->get();
+
+        return view('realisasi.index', compact('realisasis', 'kegiatans', 'bidangs'));
     }
 
     public function create()
     {
+        $user = Auth::user();
+
+        // Base query hanya untuk kegiatan aktif
         $query = Kegiatan::aktif()->with('bidang');
 
-        // Filter berdasarkan bidang jika user adalah staf
-        if (Auth::user()->role === 'staf') {
-            $query->where('bidang_id', Auth::user()->bidang_id);
+        // 🔒 Filter kegiatan sesuai role
+        if ($user->hasRole('staf')) {
+            // Staf hanya bisa menginput realisasi untuk kegiatan miliknya sendiri
+            $query->where('user_id', $user->id)
+                ->where('bidang_id', $user->bidang_id);
+        } elseif ($user->hasRole('pimpinan')) {
+            // Pimpinan hanya bisa realisasi kegiatan dalam bidangnya
+            $query->where('bidang_id', $user->bidang_id);
         }
 
-        $kegiatans = $query->get();
+        // Kegiatan aktif yang bisa direalisasikan
+        $kegiatans = $query->orderBy('nama')->get();
 
-        return view('realisasi.create', compact('kegiatans'));
+        // Admin bisa lihat semua bidang
+        if ($user->hasRole('admin')) {
+            $bidangs = Bidang::active()->get();
+        } else {
+            $bidangs = Bidang::where('id', $user->bidang_id)->get();
+        }
+
+        return view('realisasi.create', compact('kegiatans', 'bidangs'));
     }
+
 
 
     public function store(Request $request)
@@ -72,7 +132,6 @@ class RealisasiController extends Controller
             'tanggal_realisasi'  => $request->tanggal_realisasi,
             'lokasi'             => $request->lokasi,
             'catatan'            => $request->catatan,
-            // default sesuai create: langsung "submitted"
             'status'             => 'submitted',
         ]);
 
@@ -109,29 +168,17 @@ class RealisasiController extends Controller
         return 'lainnya';
     }
 
-    /** =========================
-     *  SHOW + DOWNLOAD + WORKFLOW
-     *  ========================= */
-
     public function show(Realisasi $realisasi)
     {
-        // Eager load data lengkap untuk halaman detail
-        $realisasi->load([
-            'kegiatan.bidang',
-            'user',
-            'dokumens',
-            // 'logs.user', // aktifkan bila ada riwayat status
-        ]);
-
+        $realisasi->load(['kegiatan.bidang', 'user', 'dokumens']);
         return view('realisasi.show', compact('realisasi'));
     }
 
     public function preview(Realisasi $realisasi, Dokumen $dokumen)
-
     {
         abort_if($dokumen->realisasi_id !== $realisasi->id, 404);
 
-        $disk = Storage::disk('public'); // kalau privat pakai 'local'
+        $disk = Storage::disk('public');
         abort_unless($disk->exists($dokumen->path), 404);
 
         $absPath = $disk->path($dokumen->path);
@@ -140,23 +187,22 @@ class RealisasiController extends Controller
 
         return response()->file($absPath, [
             'Content-Type'            => $mime ?: 'application/pdf',
-            'Content-Disposition'     => 'inline; filename="'.addslashes($name).'"',
+            'Content-Disposition'     => 'inline; filename="' . addslashes($name) . '"',
             'X-Content-Type-Options'  => 'nosniff',
         ]);
     }
 
-    // (Download kamu sudah punya; biarkan sebagai attachment)
     public function download(Realisasi $realisasi, Dokumen $dokumen)
-    
     {
         abort_if($dokumen->realisasi_id !== $realisasi->id, 404);
+
         $disk = Storage::disk('public');
         abort_unless($disk->exists($dokumen->path), 404);
+
         $downloadName = $dokumen->nama_asli ?: $dokumen->nama_file;
         return $disk->download($dokumen->path, $downloadName);
     }
 
-    /** Unduh semua dokumen (ZIP) */
     public function downloadAll(Realisasi $realisasi)
     {
         $realisasi->load('dokumens');
@@ -165,8 +211,8 @@ class RealisasiController extends Controller
             return back()->with('warning', 'Tidak ada dokumen untuk diunduh.');
         }
 
-        $zipName = 'realisasi_'.$realisasi->id.'_dokumen.zip';
-        $zipPath = storage_path('app/public/tmp/'.$zipName);
+        $zipName = 'realisasi_' . $realisasi->id . '_dokumen.zip';
+        $zipPath = storage_path('app/public/tmp/' . $zipName);
 
         if (!is_dir(dirname($zipPath))) {
             mkdir(dirname($zipPath), 0775, true);
@@ -189,49 +235,31 @@ class RealisasiController extends Controller
         return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 
-    /** Submit (mis. dari draft ke submitted) */
+    /** Workflow (Submit, Approve, Reject) **/
     public function submit(Realisasi $realisasi)
     {
-        // Gate/Policy opsional
-        if (Gate::denies('submit-realisasi', $realisasi)) {
-            abort(403);
-        }
-
+        if (Gate::denies('submit-realisasi', $realisasi)) abort(403);
         if ($realisasi->status === 'draft') {
             $realisasi->update(['status' => 'submitted']);
-            // Tulis log jika ada
         }
-
         return back()->with('success', 'Realisasi telah dikirim (submitted).');
     }
 
-    /** Approve (khusus role berwenang) */
     public function approve(Realisasi $realisasi)
     {
-        if (Gate::denies('approve-realisasi', $realisasi)) {
-            abort(403);
-        }
-
+        if (Gate::denies('approve-realisasi', $realisasi)) abort(403);
         if ($realisasi->status === 'submitted') {
             $realisasi->update(['status' => 'approved']);
-            // Tulis log jika ada
         }
-
         return back()->with('success', 'Realisasi disetujui.');
     }
 
-    /** Reject (khusus role berwenang) */
     public function reject(Realisasi $realisasi, Request $request)
     {
-        if (Gate::denies('approve-realisasi', $realisasi)) {
-            abort(403);
-        }
-
+        if (Gate::denies('approve-realisasi', $realisasi)) abort(403);
         if ($realisasi->status === 'submitted') {
             $realisasi->update(['status' => 'rejected']);
-            // Simpan catatan penolakan dari $request->catatan bila perlu
         }
-
         return back()->with('success', 'Realisasi ditolak.');
     }
 }

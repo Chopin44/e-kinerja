@@ -85,7 +85,7 @@ class KegiatanController extends Controller
             'bidang_id' => 'nullable|exists:bidangs,id',
             'user_id' => 'nullable|exists:users,id',
             'kategori' => 'required|in:pengadaan_langsung,swakelola,pokir',
-            'periode_type' => 'required|in:tahunan,bulanan,triwulan',
+            'periode_type' => 'required|in:triwulan 1,triwulan 2,triwulan 3, triwulan 4',
             'target_fisik' => 'required|numeric|min:0|max:100',
             'target_anggaran' => 'required|numeric|min:0',
             'tanggal_mulai' => 'required|date',

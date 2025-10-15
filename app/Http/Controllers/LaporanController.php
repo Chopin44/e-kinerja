@@ -6,6 +6,7 @@ use App\Models\Bidang;
 use App\Models\Kegiatan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use PDF;
 
@@ -31,26 +32,48 @@ class LaporanController extends Controller
             'bidang_id' => 'nullable|exists:bidangs,id',
         ]);
 
-        $bidangId = $request->bidang_id;
+        $user = Auth::user();
         $jenis = $request->jenis_laporan;
         $periode = Carbon::parse($request->periode);
         $triwulan = $request->triwulan;
+        $bidangId = $request->bidang_id;
 
+        // === Scope sesuai role (Spatie) ===
+        if ($user->hasRole('staf')) {
+            $scope = [
+                'role' => 'staf',
+                'bidang_id' => $user->bidang_id,
+                'user_id' => $user->id,
+            ];
+        } elseif ($user->hasRole('pimpinan')) {
+            $scope = [
+                'role' => 'pimpinan',
+                'bidang_id' => $user->bidang_id,
+            ];
+        } else {
+            // Admin bisa semua bidang
+            $scope = [
+                'role' => 'admin',
+                'bidang_id' => $bidangId,
+            ];
+        }
+
+        // === Pilih jenis laporan ===
         switch ($jenis) {
             case 'bulanan':
-                $data = $this->laporanBulanan($bidangId, $periode);
+                $data = $this->laporanBulanan($scope, $periode);
                 break;
 
             case 'triwulan':
-                $data = $this->laporanTriwulan($bidangId, $periode, $triwulan);
+                $data = $this->laporanTriwulan($scope, $periode, $triwulan);
                 break;
 
             case 'tahunan':
-                $data = $this->laporanTahunan($bidangId, $periode);
+                $data = $this->laporanTahunan($scope, $periode);
                 break;
 
             default:
-                $data = $this->laporanKinerjaBidang($bidangId, $periode);
+                $data = $this->laporanKinerjaBidang($scope, $periode);
                 break;
         }
 
@@ -60,6 +83,7 @@ class LaporanController extends Controller
                 'data' => $data,
                 'jenis_laporan' => $jenis,
                 'periode' => $periode,
+                'user' => $user,
             ])->render(),
         ]);
     }
@@ -67,14 +91,23 @@ class LaporanController extends Controller
     // =====================================================
     // ========== 1. LAPORAN BULANAN =======================
     // =====================================================
-    private function laporanBulanan($bidangId, Carbon $periode)
+    private function laporanBulanan(array $scope, Carbon $periode)
     {
         $query = Kegiatan::with(['bidang', 'realisasis' => function ($q) use ($periode) {
             $q->whereMonth('tanggal_realisasi', $periode->month)
               ->whereYear('tanggal_realisasi', $periode->year);
         }])->byTahun($periode->year);
 
-        if ($bidangId) $query->byBidang($bidangId);
+        // Filter sesuai scope role
+        if ($scope['role'] === 'staf') {
+            $query->where('user_id', $scope['user_id'])
+                  ->where('bidang_id', $scope['bidang_id']);
+        } elseif ($scope['role'] === 'pimpinan') {
+            $query->where('bidang_id', $scope['bidang_id']);
+        } elseif (!empty($scope['bidang_id'])) {
+            $query->where('bidang_id', $scope['bidang_id']);
+        }
+
         $kegiatans = $query->get();
 
         $result = $kegiatans->map(function ($k) {
@@ -83,6 +116,7 @@ class LaporanController extends Controller
                 'bidang' => $k->bidang->nama ?? '-',
                 'fisik' => round($k->realisasis->avg('realisasi_fisik') ?? 0, 1),
                 'anggaran' => $k->realisasis->sum('realisasi_anggaran') ?? 0,
+                'deviasi' => $k->realisasis->sum('realisasi_anggaran') - $k->target_anggaran,
                 'status' => ucfirst($k->status ?? '-'),
             ];
         });
@@ -93,73 +127,74 @@ class LaporanController extends Controller
     // =====================================================
     // ========== 2. LAPORAN TRIWULAN ======================
     // =====================================================
- private function laporanTriwulan($bidangId, Carbon $periode, $manualQuarter = null)
-{
-    $year = $periode->year;
-    $quarter = $manualQuarter ? (int) $manualQuarter : ceil($periode->month / 3);
+    private function laporanTriwulan(array $scope, Carbon $periode, $manualQuarter = null)
+    {
+        $year = $periode->year;
+        $quarter = $manualQuarter ? (int) $manualQuarter : ceil($periode->month / 3);
+        $labelMap = [
+            1 => 'Triwulan I (Jan–Mar)',
+            2 => 'Triwulan II (Apr–Jun)',
+            3 => 'Triwulan III (Jul–Sep)',
+            4 => 'Triwulan IV (Okt–Des)',
+        ];
+        $label = $labelMap[$quarter] ?? 'Triwulan Tidak Diketahui';
+        $startMonth = ($quarter - 1) * 3 + 1;
+        $endMonth = $startMonth + 2;
 
-    $labelMap = [
-        1 => 'Triwulan I (Jan–Mar)',
-        2 => 'Triwulan II (Apr–Jun)',
-        3 => 'Triwulan III (Jul–Sep)',
-        4 => 'Triwulan IV (Okt–Des)',
-    ];
+        $query = Kegiatan::with(['bidang', 'realisasis'])
+            ->whereYear('tanggal_mulai', $year)
+            ->whereBetween(\DB::raw('MONTH(tanggal_mulai)'), [$startMonth, $endMonth])
+            ->byTahun($year);
 
-    $label = $labelMap[$quarter] ?? 'Triwulan Tidak Diketahui';
-    $startMonth = ($quarter - 1) * 3 + 1;
-    $endMonth = $startMonth + 2;
+        // Filter sesuai scope
+        if ($scope['role'] === 'staf') {
+            $query->where('user_id', $scope['user_id'])
+                  ->where('bidang_id', $scope['bidang_id']);
+        } elseif ($scope['role'] === 'pimpinan') {
+            $query->where('bidang_id', $scope['bidang_id']);
+        } elseif (!empty($scope['bidang_id'])) {
+            $query->where('bidang_id', $scope['bidang_id']);
+        }
 
-    // 🔹 Ambil kegiatan berdasarkan tanggal_kegiatan / tanggal_mulai (bukan tanggal realisasi)
-    $query = Kegiatan::with(['bidang', 'realisasis'])
-        ->whereYear('tanggal_mulai', $year)
-        ->whereBetween(\DB::raw('MONTH(tanggal_mulai)'), [$startMonth, $endMonth])
-        ->byTahun($year);
+        $kegiatans = $query->get();
 
-    if ($bidangId) $query->byBidang($bidangId);
+        $totalAnggaran = $kegiatans->sum('target_anggaran');
+        $realisasiAnggaran = $kegiatans->sum(fn($k) => $k->realisasis->sum('realisasi_anggaran'));
+        $rataFisik = $kegiatans->avg(fn($k) => $k->realisasis->avg('realisasi_fisik')) ?? 0;
+        $persentase = $totalAnggaran > 0 ? ($realisasiAnggaran / $totalAnggaran) * 100 : 0;
 
-    $kegiatans = $query->get();
+        $daftarKegiatan = $kegiatans->map(function ($k) {
+            $realisasi = $k->realisasis->sum('realisasi_anggaran');
+            $sisa = $k->target_anggaran - $realisasi;
+            $deviasi = $realisasi - $k->target_anggaran;
 
-    // 🔹 Ringkasan
-    $totalAnggaran = $kegiatans->sum('target_anggaran');
-    $realisasiAnggaran = $kegiatans->sum(fn($k) => $k->realisasis->sum('realisasi_anggaran'));
-    $rataFisik = $kegiatans->avg(fn($k) => $k->realisasis->avg('realisasi_fisik')) ?? 0;
-    $persentase = $totalAnggaran > 0 ? ($realisasiAnggaran / $totalAnggaran) * 100 : 0;
-
-    // 🔹 Detail per kegiatan
-    $daftarKegiatan = $kegiatans->map(function ($k) {
-        $realisasi = $k->realisasis->sum('realisasi_anggaran');
-        $sisa = $k->target_anggaran - $realisasi;
-        $deviasi = $realisasi - $k->target_anggaran;
+            return [
+                'bidang' => $k->bidang->nama ?? '-',
+                'nama' => $k->nama,
+                'anggaran' => $k->target_anggaran,
+                'realisasi' => $realisasi,
+                'sisa' => $sisa,
+                'deviasi' => $deviasi,
+            ];
+        });
 
         return [
-            'bidang' => $k->bidang->nama ?? '-',
-            'nama' => $k->nama,
-            'anggaran' => $k->target_anggaran,
-            'realisasi' => $realisasi,
-            'sisa' => $sisa,
-            'deviasi' => $deviasi,
+            'label' => $label,
+            'quarter' => $quarter,
+            'ringkasan' => [
+                'total' => $kegiatans->count(),
+                'rata_fisik' => round($rataFisik, 1),
+                'anggaran' => $realisasiAnggaran,
+                'persentase' => round($persentase, 1),
+            ],
+            'kegiatans' => $daftarKegiatan,
         ];
-    });
-
-    return [
-        'label' => $label,
-        'quarter' => $quarter,
-        'ringkasan' => [
-            'total' => $kegiatans->count(),
-            'rata_fisik' => round($rataFisik, 1),
-            'anggaran' => $realisasiAnggaran,
-            'persentase' => round($persentase, 1),
-        ],
-        'kegiatans' => $daftarKegiatan,
-    ];
-}
-
-
+    }
 
     // =====================================================
     // ========== 3. LAPORAN TAHUNAN =======================
     // =====================================================
-    private function laporanTahunan($bidangId, Carbon $periode)
+    private function laporanTahunan(array $scope, Carbon $periode)
     {
         $year = $periode->year;
 
@@ -167,7 +202,15 @@ class LaporanController extends Controller
             $q->whereYear('tanggal_realisasi', $year);
         }])->byTahun($year);
 
-        if ($bidangId) $query->byBidang($bidangId);
+        if ($scope['role'] === 'staf') {
+            $query->where('user_id', $scope['user_id'])
+                  ->where('bidang_id', $scope['bidang_id']);
+        } elseif ($scope['role'] === 'pimpinan') {
+            $query->where('bidang_id', $scope['bidang_id']);
+        } elseif (!empty($scope['bidang_id'])) {
+            $query->where('bidang_id', $scope['bidang_id']);
+        }
+
         $kegiatans = $query->get();
 
         $result = collect(range(1, 12))->map(function ($month) use ($kegiatans, $year) {
@@ -200,41 +243,34 @@ class LaporanController extends Controller
     // =====================================================
     // ========== 4. LAPORAN KINERJA BIDANG ================
     // =====================================================
-    private function laporanKinerjaBidang($bidangId, Carbon $periode)
+    private function laporanKinerjaBidang(array $scope, Carbon $periode)
     {
         $query = Kegiatan::with(['bidang', 'realisasis'])->byTahun($periode->year);
-        if ($bidangId) $query->byBidang($bidangId);
+
+        if ($scope['role'] === 'staf') {
+            $query->where('user_id', $scope['user_id'])
+                  ->where('bidang_id', $scope['bidang_id']);
+        } elseif ($scope['role'] === 'pimpinan') {
+            $query->where('bidang_id', $scope['bidang_id']);
+        } elseif (!empty($scope['bidang_id'])) {
+            $query->where('bidang_id', $scope['bidang_id']);
+        }
+
         $kegiatans = $query->get();
 
-        $summary = [
-            'total_kegiatan' => $kegiatans->count(),
-            'selesai' => $kegiatans->where('status', 'selesai')->count(),
-            'dalam_progress' => $kegiatans->where('status', 'aktif')->count(),
-            'terlambat' => $kegiatans->where('status_evaluasi', 'terlambat')->count(),
-            'total_anggaran' => $kegiatans->sum('target_anggaran'),
-            'realisasi_anggaran' => $kegiatans->sum('current_budget_realization'),
-        ];
-
-        $bidangs = Bidang::active();
-        if ($bidangId) $bidangs->where('id', $bidangId);
-
-        $perBidang = $bidangs->get()->map(function ($bidang) use ($periode) {
-            $kegiatanBidang = $bidang->kegiatans()->byTahun($periode->year)->get();
-            $total = $kegiatanBidang->sum('target_anggaran');
-            $realisasi = $kegiatanBidang->sum('current_budget_realization');
+        $perBidang = $kegiatans->groupBy('bidang.nama')->map(function ($group, $namaBidang) {
+            $total = $group->sum('target_anggaran');
+            $realisasi = $group->sum('current_budget_realization');
 
             return [
-                'nama' => $bidang->nama,
-                'total_kegiatan' => $kegiatanBidang->count(),
-                'avg_capaian' => round($kegiatanBidang->avg('current_progress'), 1),
-                'total_anggaran' => $total,
+                'nama' => $namaBidang,
+                'kegiatans' => $group->pluck('nama')->toArray(),
                 'realisasi_anggaran' => $realisasi,
-                'persentase_anggaran' => $total > 0 ? ($realisasi / $total) * 100 : 0,
                 'deviasi' => $realisasi - $total,
             ];
-        });
+        })->values();
 
-        return compact('summary', 'perBidang');
+        return ['perBidang' => $perBidang];
     }
 
     // =====================================================
@@ -252,11 +288,12 @@ class LaporanController extends Controller
         $bidangId = $request->bidang_id;
         $triwulan = $request->triwulan;
 
+        $scope = ['role' => 'admin', 'bidang_id' => $bidangId];
         $data = match ($jenis) {
-            'bulanan' => $this->laporanBulanan($bidangId, $periode),
-            'triwulan' => $this->laporanTriwulan($bidangId, $periode, $triwulan),
-            'tahunan' => $this->laporanTahunan($bidangId, $periode),
-            default => $this->laporanKinerjaBidang($bidangId, $periode),
+            'bulanan' => $this->laporanBulanan($scope, $periode),
+            'triwulan' => $this->laporanTriwulan($scope, $periode, $triwulan),
+            'tahunan' => $this->laporanTahunan($scope, $periode),
+            default => $this->laporanKinerjaBidang($scope, $periode),
         };
 
         $pdf = PDF::loadView('laporan.pdf', compact('data', 'jenis', 'periode'))

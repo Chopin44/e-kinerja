@@ -94,12 +94,14 @@
                         <select name="periode_type"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
-                            <option value="tahunan" {{ old('periode_type')=='tahunan' ? 'selected' : '' }}>Tahunan
-                            </option>
-                            <option value="bulanan" {{ old('periode_type')=='bulanan' ? 'selected' : '' }}>Bulanan
-                            </option>
-                            <option value="triwulan" {{ old('periode_type')=='triwulan' ? 'selected' : '' }}>Triwulan
-                            </option>
+                            <option value="triwulan_1" {{ old('periode_type')=='triwulan_1' ? 'selected' : '' }}>
+                                Triwulan 1</option>
+                            <option value="triwulan_2" {{ old('periode_type')=='triwulan_2' ? 'selected' : '' }}>
+                                Triwulan 2</option>
+                            <option value="triwulan_3" {{ old('periode_type')=='triwulan_3' ? 'selected' : '' }}>
+                                Triwulan 3</option>
+                            <option value="triwulan_4" {{ old('periode_type')=='triwulan_4' ? 'selected' : '' }}>
+                                Triwulan 4</option>
                         </select>
                     </div>
 

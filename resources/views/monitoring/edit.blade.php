@@ -5,7 +5,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold text-gray-900">Edit Monitoring Kegiatan</h1>
-                    <p class="text-gray-500 mt-1 text-sm">Perbarui data kegiatan untuk kebutuhan monitoring dan evaluasi
+                    <p class="text-gray-500 mt-1 text-sm">
+                        Perbarui data kegiatan untuk kebutuhan monitoring dan evaluasi triwulan
                     </p>
                 </div>
                 <a href="{{ route('monitoring.index') }}" class="text-gray-600 hover:text-gray-900 text-sm">
@@ -35,7 +36,7 @@
                         <label class="block text-sm font-medium text-gray-700">Bidang</label>
                         <select name="bidang_id"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-blue-600 focus:border-blue-600"
-                            required>
+                            @unless(Auth::user()->hasRole('admin')) disabled @endunless>
                             @foreach ($bidangs as $b)
                             <option value="{{ $b->id }}" {{ old('bidang_id', $kegiatan->bidang_id) == $b->id ?
                                 'selected' : '' }}>
@@ -43,18 +44,23 @@
                             </option>
                             @endforeach
                         </select>
+                        @unless(Auth::user()->hasRole('admin'))
+                        <input type="hidden" name="bidang_id" value="{{ $kegiatan->bidang_id }}">
+                        @endunless
                         @error('bidang_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
-                    <!-- Periode -->
+                    <!-- Periode (Triwulan) -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Periode</label>
+                        <label class="block text-sm font-medium text-gray-700">Periode (Triwulan)</label>
                         <select name="periode"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-blue-600 focus:border-blue-600">
-                            <option value="">-</option>
-                            @foreach (['Q1', 'Q2', 'Q3', 'Q4'] as $q)
-                            <option value="{{ $q }}" {{ old('periode', $kegiatan->periode) === $q ? 'selected' : '' }}>
-                                {{ $q }}
+                            <option value="">Pilih Periode</option>
+                            @foreach (['Q1' => 'Triwulan 1', 'Q2' => 'Triwulan 2', 'Q3' => 'Triwulan 3', 'Q4' =>
+                            'Triwulan 4'] as $val => $label)
+                            <option value="{{ $val }}" {{ old('periode', $kegiatan->periode) === $val ? 'selected' : ''
+                                }}>
+                                {{ $label }}
                             </option>
                             @endforeach
                         </select>
@@ -66,8 +72,13 @@
                         <label class="block text-sm font-medium text-gray-700">Status</label>
                         <select name="status"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-blue-600 focus:border-blue-600">
-                            @foreach (['on_track' => 'On Track', 'late' => 'Terlambat', 'problem' => 'Bermasalah',
-                            'aktif' => 'Aktif', 'selesai' => 'Selesai'] as $val => $label)
+                            @foreach ([
+                            'on_track' => 'On Track',
+                            'late' => 'Terlambat',
+                            'problem' => 'Bermasalah',
+                            'aktif' => 'Aktif',
+                            'selesai' => 'Selesai'
+                            ] as $val => $label)
                             <option value="{{ $val }}" {{ old('status', $kegiatan->status) === $val ? 'selected' : ''
                                 }}>
                                 {{ $label }}

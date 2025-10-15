@@ -19,12 +19,25 @@
                     {{-- Bidang --}}
                     <div>
                         <label class="text-sm font-medium text-gray-600 mb-1 block">Bidang</label>
-                        <select name="bidang_id" class="form-select w-full">
+                        <select name="bidang_id" class="form-select w-full" @unless(Auth::user()->hasRole('admin'))
+                            disabled @endunless>
+
+                            @role('admin')
                             <option value="">Semua Bidang</option>
                             @foreach($bidangs as $bidang)
                             <option value="{{ $bidang->id }}">{{ $bidang->nama }}</option>
                             @endforeach
+                            @else
+                            <option value="{{ Auth::user()->bidang_id }}" selected>
+                                {{ Auth::user()->bidang->nama ?? 'Tidak Ada Bidang' }}
+                            </option>
+                            @endrole
                         </select>
+
+                        @unless(Auth::user()->hasRole('admin'))
+                        <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
+                        @endunless
+
                     </div>
 
                     {{-- Jenis Laporan --}}
@@ -76,10 +89,10 @@
                     </button>
 
                     <div class="flex flex-wrap gap-2">
-                        <button type="button" onclick="exportExcel()"
+                        {{-- <button type="button" onclick="exportExcel()"
                             class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-sm shadow-sm">
                             <i class="fas fa-file-excel mr-1"></i> Excel
-                        </button>
+                        </button> --}}
                         <button type="button" onclick="exportPdf()"
                             class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm shadow-sm">
                             <i class="fas fa-file-pdf mr-1"></i> PDF

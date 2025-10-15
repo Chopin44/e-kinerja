@@ -14,40 +14,61 @@ use Illuminate\Validation\Rule;
 
 class MonitoringController extends Controller
 {
+
     public function index(Request $request)
     {
-        $currentYear = $request->get('tahun', Carbon::now()->year);
+        $user = Auth::user();
 
-        $query = Kegiatan::with(['bidang', 'user', 'realisasis', 'evaluasis'])
-            ->byTahun($currentYear);
+        $query = Kegiatan::with(['bidang', 'realisasis'])
+            ->orderBy('nama', 'asc');
 
-        // Filter by role: staf hanya bisa lihat bidangnya
-        if (Auth::user()->role === 'staf') {
-            $query->byBidang(Auth::user()->bidang_id);
+        // 🔒 Filter sesuai role
+        if ($user->hasRole('staf')) {
+            // Staf hanya lihat kegiatan miliknya sendiri di bidangnya
+            $query->where('user_id', $user->id)
+                ->where('bidang_id', $user->bidang_id);
+        } elseif ($user->hasRole('pimpinan')) {
+            // Pimpinan hanya lihat kegiatan di bidangnya
+            $query->where('bidang_id', $user->bidang_id);
+        } elseif ($user->hasRole('admin')) {
+            // Admin bisa filter manual
+            if ($request->filled('bidang_id')) {
+                $query->where('bidang_id', $request->bidang_id);
+            }
         }
 
-        // Filters
-        if ($request->filled('bidang_id')) {
-            $query->byBidang($request->bidang_id);
-        }
+        // 🎯 Filter periode (Q1, Q2, dst)
         if ($request->filled('periode')) {
-            // Disederhanakan: field 'periode' di tabel kegiatan berisi Q1..Q4
             $query->where('periode', $request->periode);
         }
+
+        // 🎯 Filter status
         if ($request->filled('status')) {
-            $query->where('status', $request->status); // on_track/late/problem/aktif/selesai
+            $query->where('status', $request->status);
         }
 
+        // 🗓️ Tahun berjalan (opsional)
+        if ($request->filled('tahun')) {
+            $query->byTahun($request->tahun);
+        } else {
+            $query->byTahun(now()->year);
+        }
+
+        // 🔢 Ambil hasil
         $kegiatans = $query->paginate(10);
 
-        // Stats (untuk kartu di atas)
-        $stats = $this->calculateStats($currentYear, $request->get('bidang_id'));
-        $totalKegiatan = $stats['total_kegiatan'] ?? 0;
-        $onTrack       = $stats['on_track'] ?? 0;
-        $late          = $stats['terlambat'] ?? 0;
-        $problem       = $stats['bermasalah'] ?? 0;
+        // 📊 Statistik (bisa dipakai untuk dashboard kecil di atas)
+        $totalKegiatan = $kegiatans->total();
+        $onTrack = $kegiatans->where('status', 'on_track')->count();
+        $late = $kegiatans->where('status', 'late')->count();
+        $problem = $kegiatans->where('status', 'problem')->count();
 
-        $bidangs = Bidang::active()->get();
+        // 🔁 Dropdown bidang (hanya admin bisa pilih semua)
+        if ($user->hasRole('admin')) {
+            $bidangs = Bidang::active()->get();
+        } else {
+            $bidangs = Bidang::where('id', $user->bidang_id)->get();
+        }
 
         return view('monitoring.index', compact(
             'kegiatans',

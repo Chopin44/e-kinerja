@@ -141,16 +141,20 @@
 
         {{-- Form Evaluasi — hanya untuk ADMIN --}}
         @auth
-        @if(auth()->user()->role === 'admin')
+        @role('admin')
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-sm font-semibold text-gray-700 mb-4">Input Arahan</h3>
 
             {{-- Flash --}}
             @if(session('success'))
-            <div class="mb-3 p-3 rounded bg-green-50 text-green-700 text-sm">{{ session('success') }}</div>
+            <div class="mb-3 p-3 rounded bg-green-50 text-green-700 text-sm">
+                {{ session('success') }}
+            </div>
             @endif
             @if(session('error'))
-            <div class="mb-3 p-3 rounded bg-red-50 text-red-700 text-sm">{{ session('error') }}</div>
+            <div class="mb-3 p-3 rounded bg-red-50 text-red-700 text-sm">
+                {{ session('error') }}
+            </div>
             @endif
 
             <form action="{{ route('monitoring.evaluasi', $kegiatan) }}" method="POST" class="space-y-4">
@@ -167,16 +171,19 @@
                             <option value="tidak_sesuai" {{ old('status_evaluasi')==='tidak_sesuai' ? 'selected' :'' }}>
                                 Tidak Sesuai</option>
                         </select>
-                        @error('status_evaluasi')<div class="text-sm text-red-600">{{ $message }}</div>@enderror
+                        @error('status_evaluasi')
+                        <div class="text-sm text-red-600">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Evaluasi</label>
                         <input type="date" name="tanggal_evaluasi" class="form-input"
                             value="{{ old('tanggal_evaluasi', now()->format('Y-m-d')) }}" required>
-                        @error('tanggal_evaluasi')<div class="text-sm text-red-600">{{ $message }}</div>@enderror
+                        @error('tanggal_evaluasi')
+                        <div class="text-sm text-red-600">{{ $message }}</div>
+                        @enderror
                     </div>
-
                 </div>
 
                 <div>
@@ -184,7 +191,9 @@
                     <textarea name="catatan_evaluasi" rows="4" class="form-input" required
                         placeholder="Tuliskan evaluasi atau arahan...">{{ old('catatan_evaluasi') }}</textarea>
                     <p class="text-xs text-gray-500 mt-1">Minimal 10 karakter.</p>
-                    @error('catatan_evaluasi')<div class="text-sm text-red-600">{{ $message }}</div>@enderror
+                    @error('catatan_evaluasi')
+                    <div class="text-sm text-red-600">{{ $message }}</div>
+                    @enderror
                 </div>
 
                 <div class="flex justify-end gap-3 pt-4 border-t">
@@ -194,8 +203,9 @@
                 </div>
             </form>
         </div>
-        @endif
+        @endrole
         @endauth
+
     </div>
 
 

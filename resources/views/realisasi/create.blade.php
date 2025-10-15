@@ -29,10 +29,11 @@
                             @foreach($kegiatans as $kegiatan)
                             <option value="{{ $kegiatan->id }}" {{ old('kegiatan_id')==$kegiatan->id ? 'selected' : ''
                                 }}>
-                                {{ $kegiatan->nama }} - {{ $kegiatan->bidang->nama }}
+                                {{ $kegiatan->nama }}
                             </option>
                             @endforeach
                         </select>
+
                         @error('kegiatan_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
