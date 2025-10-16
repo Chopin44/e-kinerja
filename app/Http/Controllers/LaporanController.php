@@ -58,6 +58,21 @@ class LaporanController extends Controller
             ];
         }
 
+        // === Tentukan header "laporan untuk" berdasarkan filter & role ===
+        $selectedBidang = null;
+        if (!empty($bidangId)) {
+            $selectedBidang = Bidang::find($bidangId);
+        }
+
+        if ($user->hasRole('staf')) {
+            $laporanUntuk = $user->bidang->nama ?? 'Bidang Terkait';
+        } elseif ($user->hasRole('pimpinan')) {
+            $laporanUntuk = $user->bidang->nama ?? 'Bidang Terkait';
+        } else { // admin
+            $laporanUntuk = $selectedBidang?->nama ?? 'Seluruh Bidang';
+        }
+
+
         // === Pilih jenis laporan ===
         switch ($jenis) {
             case 'bulanan':
@@ -84,6 +99,7 @@ class LaporanController extends Controller
                 'jenis_laporan' => $jenis,
                 'periode' => $periode,
                 'user' => $user,
+                'laporanUntuk' => $laporanUntuk,
             ])->render(),
         ]);
     }

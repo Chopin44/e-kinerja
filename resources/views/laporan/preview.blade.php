@@ -3,40 +3,60 @@
     use Carbon\Carbon;
     use Illuminate\Support\Facades\Auth;
 
-    // Pastikan variabel tersedia
     $user = $user ?? Auth::user();
     $jenis_laporan = $jenis_laporan ?? 'kinerja_bidang';
-    $periode = $periode ?? now();
+    $periode = $periode instanceof Carbon ? $periode : Carbon::parse($periode);
 
-    // Format periode
-    $periodeFormat = (strlen($periode) === 7)
-    ? Carbon::parse($periode)->translatedFormat('F Y')
-    : Carbon::parse($periode . '-01')->translatedFormat('Y');
+    // Ambil 'laporanUntuk' dari controller bila dikirim; fallback ke role user
+    if (!empty($laporanUntuk)) {
+    $targetBidang = $laporanUntuk;
+    } else {
+    if ($user->hasRole('admin')) {
+    $targetBidang = 'Seluruh Bidang';
+    } elseif ($user->hasRole('pimpinan')) {
+    $targetBidang = $user->bidang->nama ?? 'Bidang Terkait';
+    } else {
+    $targetBidang = $user->bidang->nama ?? 'Bidang Terkait';
+    }
+    }
 
-    // Format triwulan
-    if ($jenis_laporan === 'triwulan') {
-    $quarter = $data['quarter'] ?? ceil(Carbon::parse($periode)->month / 3);
+    // Periode label sesuai jenis
+    switch ($jenis_laporan) {
+    case 'bulanan':
+    $periodeFormat = $periode->translatedFormat('F Y'); // contoh: "Oktober 2025"
+    break;
+
+    case 'triwulan':
+    $quarter = $data['quarter'] ?? ceil($periode->month / 3);
     $map = [
     1 => 'Triwulan I (Januari – Maret)',
     2 => 'Triwulan II (April – Juni)',
     3 => 'Triwulan III (Juli – September)',
     4 => 'Triwulan IV (Oktober – Desember)',
     ];
-    $periodeFormat = $map[$quarter] . ' ' . Carbon::parse($periode)->year;
+    $periodeFormat = ($map[$quarter] ?? 'Triwulan') . ' ' . $periode->year;
+    break;
+
+    case 'tahunan':
+    $periodeFormat = $periode->year;
+    break;
+
+    default: // kinerja_bidang
+    // biasanya kinerja per tahun
+    $periodeFormat = $periode->year;
+    break;
     }
 
-    // Role label dan bidang target
+    // Role label untuk footer
     if ($user->hasRole('admin')) {
     $roleLabel = 'Administrator DINPORAPAR';
-    $laporanUntuk = 'Seluruh Bidang';
     } elseif ($user->hasRole('pimpinan')) {
     $roleLabel = 'Pimpinan Bidang ' . ($user->bidang->nama ?? '');
-    $laporanUntuk = $user->bidang->nama ?? 'Bidang Terkait';
     } else {
     $roleLabel = $user->name;
-    $laporanUntuk = $user->bidang->nama ?? 'Bidang Terkait';
     }
     @endphp
+
 
     {{-- === HEADER === --}}
     <div class="text-center border-b pb-4">
