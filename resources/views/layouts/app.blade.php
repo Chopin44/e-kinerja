@@ -5,7 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'SIMONIK OPD') }}</title>
+    <title>{{ config('', 'Sistem Kinerja Dinporapar Kab Pekalongan') }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/dinporapar.png') }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -122,7 +123,7 @@
                             <img src="{{ asset('images/dinporapar.png') }}" alt="Logo DINPORAPAR"
                                 class="w-12 h-12 mr-4">
                             <div class="flex flex-col leading-tight">
-                                <span class="text-blue-600">E-Kinerja</span>
+                                <span class="text-blue-600">Sistem Kinerja</span>
                                 <span class="text-sm text-gray-800 font-normal">
                                     DINPORAPAR Kab. Pekalongan
                                 </span>
