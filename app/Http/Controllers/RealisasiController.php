@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Dokumen;
 use App\Models\Kegiatan;
 use App\Models\Realisasi;
+use App\Models\SubKegiatan;
 use App\Models\Bidang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,31 +19,40 @@ class RealisasiController extends Controller
     {
         $user = Auth::user();
 
-        $query = Realisasi::with(['kegiatan.bidang', 'user', 'dokumens']);
+        $query = Realisasi::with([
+            'kegiatan.bidang',
+            'subKegiatan',        // ← eager load subkegiatan
+            'user',
+            'dokumens'
+        ]);
 
         // 🔒 Pembatasan data berdasarkan role
         if ($user->role === 'staf') {
-            // Staf hanya melihat realisasi dari kegiatan yang ia buat sendiri di bidangnya
+            // Staf: realisasi dari kegiatan miliknya sendiri di bidangnya
             $query->whereHas('kegiatan', function ($q) use ($user) {
                 $q->where('bidang_id', $user->bidang_id)
-                ->where('user_id', $user->id); // ← Tambahkan ini
+                  ->where('user_id', $user->id);
             });
         } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
-            // Pimpinan hanya melihat realisasi dari bidangnya sendiri
+            // Pimpinan: realisasi dari bidangnya
             $query->whereHas('kegiatan', function ($q) use ($user) {
                 $q->where('bidang_id', $user->bidang_id);
             });
         } elseif ($request->filled('bidang_id')) {
-            // Admin bisa filter manual berdasarkan bidang
+            // Admin: filter manual by bidang
             $query->whereHas('kegiatan', function ($q) use ($request) {
                 $q->where('bidang_id', $request->bidang_id);
             });
         }
 
-
         // 🎯 Filter kegiatan
         if ($request->filled('kegiatan_id')) {
             $query->where('kegiatan_id', $request->kegiatan_id);
+        }
+
+        // 🎯 (opsional) Filter subkegiatan
+        if ($request->filled('sub_kegiatan_id')) {
+            $query->where('sub_kegiatan_id', $request->sub_kegiatan_id);
         }
 
         // 🎯 Filter status
@@ -57,7 +67,6 @@ class RealisasiController extends Controller
             $query->whereYear('tanggal_realisasi', Carbon::now()->year);
         }
 
-        // 🔢 Pagination hasil
         $realisasis = $query->orderByDesc('tanggal_realisasi')->paginate(10);
 
         // 🔁 Dropdown kegiatan menyesuaikan bidang & role
@@ -67,55 +76,59 @@ class RealisasiController extends Controller
                 ->aktif()
                 ->get();
         } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
-            $kegiatans = Kegiatan::where('bidang_id', $user->bidang_id)
-                ->aktif()
-                ->get();
+            $kegiatans = Kegiatan::where('bidang_id', $user->bidang_id)->aktif()->get();
         } else {
             $kegiatans = Kegiatan::aktif()->get();
         }
 
-        // Untuk dropdown bidang (khusus admin)
+        // List subkegiatan untuk dropdown filter (sesuai jangkauan kegiatan di atas)
+        $subKegiatans = SubKegiatan::whereIn('kegiatan_id', $kegiatans->pluck('id'))
+            ->orderBy('nama')
+            ->get();
+
+        // Dropdown bidang (khusus admin)
         $bidangs = Bidang::active()->get();
 
-        return view('realisasi.index', compact('realisasis', 'kegiatans', 'bidangs'));
+        return view('realisasi.index', compact('realisasis', 'kegiatans', 'subKegiatans', 'bidangs'));
     }
 
     public function create()
     {
         $user = Auth::user();
 
-        // Base query hanya untuk kegiatan aktif
+        // Base query hanya kegiatan aktif
         $query = Kegiatan::aktif()->with('bidang');
 
         // 🔒 Filter kegiatan sesuai role
         if ($user->hasRole('staf')) {
-            // Staf hanya bisa menginput realisasi untuk kegiatan miliknya sendiri
             $query->where('user_id', $user->id)
-                ->where('bidang_id', $user->bidang_id);
+                  ->where('bidang_id', $user->bidang_id);
         } elseif ($user->hasRole('pimpinan')) {
-            // Pimpinan hanya bisa realisasi kegiatan dalam bidangnya
             $query->where('bidang_id', $user->bidang_id);
         }
 
-        // Kegiatan aktif yang bisa direalisasikan
         $kegiatans = $query->orderBy('nama')->get();
 
-        // Admin bisa lihat semua bidang
+        // Ambil subkegiatan dari kegiatan yang boleh diakses
+        $subKegiatans = SubKegiatan::whereIn('kegiatan_id', $kegiatans->pluck('id'))
+            ->orderBy('nama')
+            ->get();
+
+        // Admin: semua bidang, lainnya: bidang sendiri
         if ($user->hasRole('admin')) {
             $bidangs = Bidang::active()->get();
         } else {
             $bidangs = Bidang::where('id', $user->bidang_id)->get();
         }
 
-        return view('realisasi.create', compact('kegiatans', 'bidangs'));
+        return view('realisasi.create', compact('kegiatans', 'subKegiatans', 'bidangs'));
     }
-
-
 
     public function store(Request $request)
     {
         $request->validate([
             'kegiatan_id'        => 'required|exists:kegiatans,id',
+            'sub_kegiatan_id'    => 'nullable|exists:sub_kegiatans,id', // opsional
             'realisasi_fisik'    => 'required|numeric|min:0|max:100',
             'realisasi_anggaran' => 'required|numeric|min:0',
             'tanggal_realisasi'  => 'required|date',
@@ -124,8 +137,19 @@ class RealisasiController extends Controller
             'dokumen.*'          => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
         ]);
 
+        // Validasi konsistensi: jika sub_kegiatan_id diisi, harus milik kegiatan_id yang sama
+        if ($request->filled('sub_kegiatan_id')) {
+            $sub = SubKegiatan::find($request->sub_kegiatan_id);
+            if (!$sub || (int)$sub->kegiatan_id !== (int)$request->kegiatan_id) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['sub_kegiatan_id' => 'Subkegiatan tidak sesuai dengan Kegiatan yang dipilih.']);
+            }
+        }
+
         $realisasi = Realisasi::create([
             'kegiatan_id'        => $request->kegiatan_id,
+            'sub_kegiatan_id'    => $request->sub_kegiatan_id, // bisa null
             'user_id'            => Auth::id(),
             'realisasi_fisik'    => $request->realisasi_fisik,
             'realisasi_anggaran' => $request->realisasi_anggaran,
@@ -170,7 +194,7 @@ class RealisasiController extends Controller
 
     public function show(Realisasi $realisasi)
     {
-        $realisasi->load(['kegiatan.bidang', 'user', 'dokumens']);
+        $realisasi->load(['kegiatan.bidang', 'subKegiatan', 'user', 'dokumens']);
         return view('realisasi.show', compact('realisasi'));
     }
 

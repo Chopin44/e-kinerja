@@ -11,20 +11,34 @@ class Realisasi extends Model
     use HasFactory;
 
     protected $fillable = [
-        'kegiatan_id', 'user_id', 'realisasi_fisik', 'realisasi_anggaran',
-        'tanggal_realisasi', 'lokasi', 'catatan', 'status'
+        'kegiatan_id',
+        'sub_kegiatan_id',      // ← baru
+        'user_id',
+        'realisasi_fisik',
+        'realisasi_anggaran',
+        'tanggal_realisasi',
+        'lokasi',
+        'catatan',
+        'status',
     ];
 
     protected $casts = [
-        'realisasi_fisik' => 'decimal:2',
+        'realisasi_fisik'    => 'decimal:2',
         'realisasi_anggaran' => 'decimal:2',
-        'tanggal_realisasi' => 'date',
+        'tanggal_realisasi'  => 'date',
     ];
 
-    // Relationships
+    /** =====================
+     *  Relationships
+     *  ===================== */
     public function kegiatan()
     {
         return $this->belongsTo(Kegiatan::class);
+    }
+
+    public function subKegiatan()
+    {
+        return $this->belongsTo(SubKegiatan::class, 'sub_kegiatan_id');
     }
 
     public function user()
@@ -37,7 +51,9 @@ class Realisasi extends Model
         return $this->hasMany(Dokumen::class);
     }
 
-    // Scopes
+    /** =====================
+     *  Scopes
+     *  ===================== */
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
