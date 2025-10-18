@@ -27,8 +27,8 @@ class MonitoringController extends Controller
             // Staf hanya lihat kegiatan miliknya sendiri di bidangnya
             $query->where('user_id', $user->id)
                 ->where('bidang_id', $user->bidang_id);
-        } elseif ($user->hasRole('pimpinan')) {
-            // Pimpinan hanya lihat kegiatan di bidangnya
+        } elseif ($user->hasRole('kabid')) {
+            // kabid hanya lihat kegiatan di bidangnya
             $query->where('bidang_id', $user->bidang_id);
         } elseif ($user->hasRole('admin')) {
             // Admin bisa filter manual

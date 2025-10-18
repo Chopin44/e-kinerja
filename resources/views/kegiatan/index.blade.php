@@ -66,8 +66,7 @@
                         <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
                         <p
                             class="text-xs text-gray-500 flex items-center mt-1.5 sm:absolute sm:top-full sm:left-0 sm:right-0 sm:mt-2">
-                            <i class="fas fa-lock text-gray-400 mr-1"></i>
-                            Bidang Anda telah dikunci otomatis.
+                            <i class="fas fa-lock text-gray-400 mr-1"></i> Bidang Anda telah dikunci otomatis.
                         </p>
                         @endunless
                     </div>
@@ -78,9 +77,7 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tahun</label>
                     <select name="tahun" class="form-select">
                         @for ($year = date('Y') - 2; $year <= date('Y') + 2; $year++) <option value="{{ $year }}" {{
-                            request('tahun', date('Y'))==$year ? 'selected' : '' }}>
-                            {{ $year }}
-                            </option>
+                            request('tahun', date('Y'))==$year ? 'selected' : '' }}>{{ $year }}</option>
                             @endfor
                     </select>
                 </div>
@@ -96,7 +93,6 @@
                     </select>
                 </div>
 
-                {{-- BTN --}}
                 <div>
                     <button type="submit"
                         class="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
@@ -106,7 +102,7 @@
             </form>
         </div>
 
-        <!-- Kegiatan Table (tanpa progress di level kegiatan) -->
+        <!-- Tabel Kegiatan (progress dihapus di level kegiatan) -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -121,25 +117,20 @@
                             <th class="px-3 py-3"></th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($kegiatans as $kegiatan)
-                        {{-- Satu KEGIATAN = satu
-                    <tbody> supaya 2 baris (utama+expand) berbagi scope Alpine --}}
-                    <tbody x-data="{ open: false }">
+
+                    @forelse($kegiatans as $kegiatan)
+                    {{-- Satu KEGIATAN = satu TBODY supaya toggle Alpine stabil --}}
+                    <tbody x-data="{ open:false }" class="bg-white divide-y divide-gray-200">
+                        <!-- Row utama -->
                         <tr class="hover:bg-gray-50">
-                            <!-- Kegiatan -->
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">{{ $kegiatan->nama }}</div>
                                 <div class="text-xs text-gray-500">Periode: {{ $kegiatan->periode_type }} • Tahun: {{
                                     $kegiatan->tahun }}</div>
                             </td>
-
-                            <!-- Bidang -->
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ $kegiatan->bidang->nama }}
                             </td>
-
-                            <!-- Status -->
                             <td class="px-6 py-4">
                                 @php
                                 $statusClasses = [
@@ -153,8 +144,6 @@
                                     {{ ucfirst($kegiatan->status) }}
                                 </span>
                             </td>
-
-                            <!-- Aksi -->
                             <td class="px-6 py-4 text-sm">
                                 <div class="flex items-center space-x-2">
                                     <button type="button" @click="open = !open"
@@ -207,18 +196,28 @@
                                                 <th class="px-3 py-2 text-left">Total Rincian</th>
                                                 <th class="px-3 py-2 text-left">Progress</th>
                                                 <th class="px-3 py-2 text-left">Rincian</th>
+                                                <th class="px-3 py-2 text-left">Aksi</th>
                                             </tr>
                                         </thead>
+
                                         <tbody>
-                                            @foreach($kegiatan->subKegiatans as $sub)
+                                            @php
+                                            // ⛳ Filter subkegiatan DI SINI untuk role "staf"
+                                            $subs = Auth::user()->hasRole('staf')
+                                            ? $kegiatan->subKegiatans->where('user_id', Auth::id())
+                                            : $kegiatan->subKegiatans;
+                                            @endphp
+
+                                            @forelse($subs as $sub)
                                             {{-- Satu SUB = satu
-                                        <tbody> supaya baris rincian berbagi scope "detil" --}}
+                                        <tbody> agar baris rincian berbagi scope "detil" --}}
                                         <tbody x-data="{ detil: false }">
                                             @php
                                             $totalRincian = (float) $sub->rincianKegiatans->sum('anggaran');
                                             $target = (float) ($sub->target_anggaran ?? 0);
 
-                                            $budgetProgress = 0; // nanti diganti realisasi sub
+                                            // Progress anggaran (sementara 0 kalau realisasi belum dihubungkan)
+                                            $budgetProgress = 0;
 
                                             $targetFisik = isset($sub->target_fisik) ? (float)$sub->target_fisik : 0;
                                             $realisasiFisik = isset($sub->realisasi_fisik) ?
@@ -231,10 +230,12 @@
                                             <tr class="hover:bg-white">
                                                 <td class="px-3 py-2 font-medium text-gray-900">{{ $sub->nama }}</td>
                                                 <td class="px-3 py-2 text-gray-700">{{ $sub->user->name ?? '-' }}</td>
-                                                <td class="px-3 py-2 whitespace-nowrap">Rp {{ number_format($target, 0,
-                                                    ',', '.') }}</td>
-                                                <td class="px-3 py-2 whitespace-nowrap">Rp {{
-                                                    number_format($totalRincian, 0, ',', '.') }}</td>
+                                                <td class="px-3 py-2 whitespace-nowrap">
+                                                    Rp {{ number_format($target, 0, ',', '.') }}
+                                                </td>
+                                                <td class="px-3 py-2 whitespace-nowrap">
+                                                    Rp {{ number_format($totalRincian, 0, ',', '.') }}
+                                                </td>
                                                 <td class="px-3 py-2 w-72">
                                                     <div class="space-y-2">
                                                         <div>
@@ -262,10 +263,7 @@
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                        <div class="text-[10px] text-gray-400">
-                                                            {{ $sub->periode_type ?? $kegiatan->periode_type }} • {{
-                                                            $sub->tahun ?? $kegiatan->tahun }}
-                                                        </div>
+
                                                     </div>
                                                 </td>
                                                 <td class="px-3 py-2">
@@ -274,68 +272,107 @@
                                                         Lihat Rincian ({{ $sub->rincianKegiatans->count() }})
                                                     </button>
                                                 </td>
+                                                <td class="px-3 py-2">
+                                                    @if(Auth::user()->hasRole('admin') || Auth::id() === $sub->user_id)
+                                                    <div class="flex items-center gap-2">
+                                                        <a href="{{ route('subkegiatan.edit', $sub) }}"
+                                                            class="btn-secondary text-xs px-3 py-1 inline-flex items-center">
+                                                            <i class="fas fa-edit mr-1"></i> Edit Sub
+                                                        </a>
+                                                        <a href="{{ route('subkegiatan.rincian.index', $sub) }}"
+                                                            class="btn-primary text-xs px-3 py-1 inline-flex items-center">
+                                                            <i class="fas fa-list mr-1"></i> Kelola Rincian
+                                                        </a>
+                                                    </div>
+                                                    @else
+                                                    <span class="text-xs text-gray-400">-</span>
+                                                    @endif
+                                                </td>
+
                                             </tr>
 
-                                            {{-- RINCIAN (kategori tampil DI SINI) --}}
+                                            {{-- RINCIAN --}}
                                             <tr x-show="detil" x-cloak>
                                                 <td colspan="7" class="bg-gray-50 px-3 py-3">
                                                     @if($sub->rincianKegiatans->isEmpty())
                                                     <div class="text-xs text-gray-500">Belum ada rincian.</div>
                                                     @else
-                                                    <table class="min-w-full border text-xs divide-y divide-gray-200">
-                                                        <thead class="bg-gray-100 text-gray-700">
-                                                            <tr>
-                                                                <th class="px-2 py-1 text-left">Uraian</th>
-                                                                <th class="px-2 py-1 text-left">Kategori</th>
-                                                                <th class="px-2 py-1 text-left">Anggaran</th>
-                                                                <th class="px-2 py-1 text-left">Satuan</th>
-                                                                <th class="px-2 py-1 text-left">Volume</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            @foreach($sub->rincianKegiatans as $r)
-                                                            <tr>
-                                                                <td class="px-2 py-1">{{ $r->uraian }}</td>
-                                                                <td class="px-2 py-1">{{ $r->kategori ?
-                                                                    ucwords(str_replace('_',' ',$r->kategori)) : '-' }}
-                                                                </td>
-                                                                <td class="px-2 py-1 whitespace-nowrap">Rp {{
-                                                                    number_format($r->anggaran ?? 0, 0, ',', '.') }}
-                                                                </td>
-                                                                <td class="px-2 py-1">{{ $r->satuan ?? '-' }}</td>
-                                                                <td class="px-2 py-1">{{ $r->volume ?? '-' }}</td>
-                                                            </tr>
-                                                            @endforeach
-                                                        </tbody>
-                                                    </table>
+                                                    <div class="overflow-x-auto">
+                                                        <table class="min-w-full text-[13px]">
+                                                            <thead>
+                                                                <tr
+                                                                    class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wide">
+                                                                    <th class="px-3 py-2 text-left font-semibold">Uraian
+                                                                    </th>
+                                                                    <th class="px-3 py-2 text-left font-semibold">
+                                                                        Kategori</th>
+                                                                    <th class="px-3 py-2 text-left font-semibold">
+                                                                        Anggaran</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody class="divide-y divide-slate-100">
+                                                                @foreach($sub->rincianKegiatans as $r)
+                                                                <tr class="hover:bg-slate-50/60">
+                                                                    <td class="px-3 py-2 text-slate-900">
+                                                                        {{ $r->uraian }}
+                                                                    </td>
+                                                                    <td class="px-3 py-2">
+                                                                        @php
+                                                                        $label = $r->kategori ?
+                                                                        ucwords(str_replace('_',' ',$r->kategori)) :
+                                                                        '-';
+                                                                        @endphp
+                                                                        <span
+                                                                            class="inline-flex items-center rounded-md bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 text-[11px]">
+                                                                            {{ $label }}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="px-3 py-2 text-left">
+                                                                        <span class="font-semibold text-slate-800">
+                                                                            Rp {{ number_format($r->anggaran ?? 0, 0,
+                                                                            ',', '.') }}
+                                                                        </span>
+                                                                    </td>
+                                                                </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                     @endif
                                                 </td>
                                             </tr>
+
                                         </tbody>
-                                        @endforeach
+                                        @empty
+                                        <tr>
+                                            <td colspan="6" class="px-3 py-3 text-sm text-gray-500">
+                                                Tidak ada subkegiatan milik Anda pada kegiatan ini.
+                                            </td>
+                                        </tr>
+                                        @endforelse
                     </tbody>
                 </table>
             </div>
             @endif
             </td>
             </tr>
+
             </tbody>
             @empty
-            <tr>
-                <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                    <i class="fas fa-inbox text-4xl mb-3"></i>
-                    <div>Belum ada data kegiatan</div>
-                    <a href="{{ route('kegiatan.create') }}" class="text-blue-600 hover:underline">Tambah kegiatan
-                        pertama</a>
-                </td>
-            </tr>
-            @endforelse
+            <tbody>
+                <tr>
+                    <td colspan="4" class="px-6 py-8 text-center text-gray-500">
+                        <i class="fas fa-inbox text-4xl mb-3"></i>
+                        <div>Belum ada data kegiatan</div>
+                        <a href="{{ route('kegiatan.create') }}" class="text-blue-600 hover:underline">Tambah
+                            kegiatan pertama</a>
+                    </td>
+                </tr>
             </tbody>
-
+            @endforelse
             </table>
         </div>
 
-        <!-- Pagination -->
         <div class="bg-white px-4 py-3 border-t custom-pagination">
             {{ $kegiatans->withQueryString()->links() }}
         </div>

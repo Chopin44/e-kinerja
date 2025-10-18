@@ -8,7 +8,7 @@
                         <i class="fas fa-tasks text-blue-600 mr-3"></i>
                         Data Realisasi
                     </h1>
-                    <p class="text-gray-600 mt-1">Kelola realisasi fisik dan anggaran kegiatan</p>
+                    <p class="text-gray-600 mt-1">Kelola realisasi fisik & anggaran subkegiatan</p>
                 </div>
                 <a href="{{ route('realisasi.create') }}" class="btn-primary">
                     <i class="fas fa-plus mr-2"></i>
@@ -17,18 +17,15 @@
             </div>
         </div>
 
-        <!-- Filters -->
+        <!-- Filters (tetap seperti punyamu) -->
         <div class="bg-white rounded-lg shadow p-8">
             <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-
-                {{-- === BIDANG === --}}
+                {{-- BIDANG --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Bidang</label>
-
                     <div class="relative w-full">
                         <select name="bidang_id" class="form-select w-full" @unless(Auth::user()->hasRole('admin'))
                             disabled @endunless>
-
                             @role('admin')
                             <option value="">Semua Bidang</option>
                             @foreach($bidangs as $bidang)
@@ -42,19 +39,17 @@
                             </option>
                             @endrole
                         </select>
-
                         @unless(Auth::user()->hasRole('admin'))
                         <input type="hidden" name="bidang_id" value="{{ Auth::user()->bidang_id }}">
                         <p
                             class="text-xs text-gray-500 flex items-center mt-1.5 sm:absolute sm:top-full sm:left-0 sm:right-0 sm:mt-2">
-                            <i class="fas fa-lock text-gray-400 mr-1"></i>
-                            Bidang Anda telah dikunci otomatis.
+                            <i class="fas fa-lock text-gray-400 mr-1"></i> Bidang Anda telah dikunci otomatis.
                         </p>
                         @endunless
                     </div>
                 </div>
 
-                {{-- === TAHUN === --}}
+                {{-- TAHUN --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Tahun</label>
                     <select name="tahun" class="form-select">
@@ -66,7 +61,7 @@
                     </select>
                 </div>
 
-                {{-- === STATUS === --}}
+                {{-- STATUS --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                     <select name="status" class="form-select">
@@ -79,7 +74,6 @@
                     </select>
                 </div>
 
-                {{-- === TOMBOL FILTER === --}}
                 <div>
                     <button type="submit"
                         class="w-full md:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
@@ -96,7 +90,7 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                                Kegiatan</th>
+                                Kegiatan & Sub</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                                 Tanggal</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
@@ -115,7 +109,15 @@
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">{{ $realisasi->kegiatan->nama }}</div>
                                 <div class="text-sm text-gray-500">{{ $realisasi->kegiatan->bidang->nama }}</div>
-                                <div class="text-xs text-gray-400">Input oleh: {{ $realisasi->user->name }}</div>
+
+                                @if($realisasi->subKegiatan)
+                                <div
+                                    class="mt-1 inline-flex items-center px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-xs">
+                                    Sub: {{ $realisasi->subKegiatan->nama }}
+                                </div>
+                                @endif
+
+                                <div class="text-xs text-gray-400 mt-1">Input oleh: {{ $realisasi->user->name }}</div>
                             </td>
                             <td class="px-6 py-4 text-sm text-gray-900">
                                 {{ $realisasi->tanggal_realisasi->format('d/m/Y') }}
@@ -131,7 +133,8 @@
                                     Rp {{ number_format($realisasi->realisasi_anggaran, 0, ',', '.') }}
                                 </div>
                                 <div class="text-gray-500 text-xs">
-                                    Target: Rp {{ number_format($realisasi->kegiatan->target_anggaran, 0, ',', '.') }}
+                                    @php $targetSub = $realisasi->subKegiatan->target_anggaran ?? 0; @endphp
+                                    Target Sub: Rp {{ number_format($targetSub, 0, ',', '.') }}
                                 </div>
                             </td>
                             <td class="px-6 py-4">

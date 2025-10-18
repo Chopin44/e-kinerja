@@ -21,20 +21,18 @@ class RealisasiController extends Controller
 
         $query = Realisasi::with([
             'kegiatan.bidang',
-            'subKegiatan',        // ← eager load subkegiatan
+            'subKegiatan',        // sub wajib tampil
             'user',
             'dokumens'
         ]);
 
-        // 🔒 Pembatasan data berdasarkan role
-        if ($user->role === 'staf') {
-            // Staf: realisasi dari kegiatan miliknya sendiri di bidangnya
+        // 🔒 Pembatasan data berdasarkan role (pakai Spatie role)
+        if ($user->hasRole('staf')) {
             $query->whereHas('kegiatan', function ($q) use ($user) {
                 $q->where('bidang_id', $user->bidang_id)
                   ->where('user_id', $user->id);
             });
-        } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
-            // Pimpinan: realisasi dari bidangnya
+        } elseif ($user->hasRole('kabid') && $user->bidang_id) {
             $query->whereHas('kegiatan', function ($q) use ($user) {
                 $q->where('bidang_id', $user->bidang_id);
             });
@@ -50,7 +48,7 @@ class RealisasiController extends Controller
             $query->where('kegiatan_id', $request->kegiatan_id);
         }
 
-        // 🎯 (opsional) Filter subkegiatan
+        // 🎯 Filter subkegiatan
         if ($request->filled('sub_kegiatan_id')) {
             $query->where('sub_kegiatan_id', $request->sub_kegiatan_id);
         }
@@ -60,7 +58,7 @@ class RealisasiController extends Controller
             $query->where('status', $request->status);
         }
 
-        // 🎯 Filter tahun realisasi
+        // 🎯 Filter tahun realisasi (default: tahun berjalan)
         if ($request->filled('tahun')) {
             $query->whereYear('tanggal_realisasi', $request->tahun);
         } else {
@@ -70,15 +68,19 @@ class RealisasiController extends Controller
         $realisasis = $query->orderByDesc('tanggal_realisasi')->paginate(10);
 
         // 🔁 Dropdown kegiatan menyesuaikan bidang & role
-        if ($user->role === 'staf') {
+        if ($user->hasRole('staf')) {
             $kegiatans = Kegiatan::where('bidang_id', $user->bidang_id)
                 ->where('user_id', $user->id)
                 ->aktif()
+                ->orderBy('nama')
                 ->get();
-        } elseif ($user->role === 'pimpinan' && $user->bidang_id) {
-            $kegiatans = Kegiatan::where('bidang_id', $user->bidang_id)->aktif()->get();
+        } elseif ($user->hasRole('kabid') && $user->bidang_id) {
+            $kegiatans = Kegiatan::where('bidang_id', $user->bidang_id)
+                ->aktif()
+                ->orderBy('nama')
+                ->get();
         } else {
-            $kegiatans = Kegiatan::aktif()->get();
+            $kegiatans = Kegiatan::aktif()->orderBy('nama')->get();
         }
 
         // List subkegiatan untuk dropdown filter (sesuai jangkauan kegiatan di atas)
@@ -103,7 +105,7 @@ class RealisasiController extends Controller
         if ($user->hasRole('staf')) {
             $query->where('user_id', $user->id)
                   ->where('bidang_id', $user->bidang_id);
-        } elseif ($user->hasRole('pimpinan')) {
+        } elseif ($user->hasRole('kabid')) {
             $query->where('bidang_id', $user->bidang_id);
         }
 
@@ -114,7 +116,7 @@ class RealisasiController extends Controller
             ->orderBy('nama')
             ->get();
 
-        // Admin: semua bidang, lainnya: bidang sendiri
+        // Admin: semua bidang, lainnya: bidang sendiri (opsional dipakai untuk info)
         if ($user->hasRole('admin')) {
             $bidangs = Bidang::active()->get();
         } else {
@@ -126,9 +128,10 @@ class RealisasiController extends Controller
 
     public function store(Request $request)
     {
+        // ⛳ Wajib subkegiatan
         $request->validate([
             'kegiatan_id'        => 'required|exists:kegiatans,id',
-            'sub_kegiatan_id'    => 'nullable|exists:sub_kegiatans,id', // opsional
+            'sub_kegiatan_id'    => 'required|exists:sub_kegiatans,id',
             'realisasi_fisik'    => 'required|numeric|min:0|max:100',
             'realisasi_anggaran' => 'required|numeric|min:0',
             'tanggal_realisasi'  => 'required|date',
@@ -137,19 +140,17 @@ class RealisasiController extends Controller
             'dokumen.*'          => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
         ]);
 
-        // Validasi konsistensi: jika sub_kegiatan_id diisi, harus milik kegiatan_id yang sama
-        if ($request->filled('sub_kegiatan_id')) {
-            $sub = SubKegiatan::find($request->sub_kegiatan_id);
-            if (!$sub || (int)$sub->kegiatan_id !== (int)$request->kegiatan_id) {
-                return back()
-                    ->withInput()
-                    ->withErrors(['sub_kegiatan_id' => 'Subkegiatan tidak sesuai dengan Kegiatan yang dipilih.']);
-            }
+        // validasi konsistensi sub ↔ kegiatan
+        $sub = SubKegiatan::find($request->sub_kegiatan_id);
+        if (!$sub || (int)$sub->kegiatan_id !== (int)$request->kegiatan_id) {
+            return back()
+                ->withInput()
+                ->withErrors(['sub_kegiatan_id' => 'Subkegiatan tidak sesuai dengan Kegiatan yang dipilih.']);
         }
 
         $realisasi = Realisasi::create([
             'kegiatan_id'        => $request->kegiatan_id,
-            'sub_kegiatan_id'    => $request->sub_kegiatan_id, // bisa null
+            'sub_kegiatan_id'    => $request->sub_kegiatan_id, // wajib, tidak null
             'user_id'            => Auth::id(),
             'realisasi_fisik'    => $request->realisasi_fisik,
             'realisasi_anggaran' => $request->realisasi_anggaran,
@@ -259,7 +260,7 @@ class RealisasiController extends Controller
         return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 
-    /** Workflow (Submit, Approve, Reject) **/
+    /** Workflow (opsional) **/
     public function submit(Realisasi $realisasi)
     {
         if (Gate::denies('submit-realisasi', $realisasi)) abort(403);

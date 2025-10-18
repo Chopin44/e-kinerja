@@ -166,18 +166,9 @@
                                             x-model="sub.nama">
                                     </div>
 
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700">Kode Subkegiatan
-                                            (opsional)</label>
-                                        <input type="text" class="form-input"
-                                            :name="`subkegiatans[${si}][kode_subkegiatan]`"
-                                            x-model="sub.kode_subkegiatan">
-                                    </div>
-
                                     {{-- === STAF ADMIN (PJ Subkegiatan) === --}}
                                     <div class="lg:col-span-2">
-                                        <label class="block text-sm font-medium text-gray-700">Staf Admin
-                                            (Subkegiatan)</label>
+                                        <label class="block text-sm font-medium text-gray-700">Staf Admin</label>
 
                                         @if(Auth::user()->hasRole('admin'))
                                         <select class="form-select" :name="`subkegiatans[${si}][user_id]`"
@@ -195,8 +186,6 @@
                                         <input type="hidden" :name="`subkegiatans[${si}][user_id]`"
                                             value="{{ Auth::id() }}">
                                         @endif
-                                        <p class="text-xs text-gray-500 mt-1">Penanggung jawab khusus subkegiatan ini.
-                                        </p>
                                     </div>
 
                                     <div>
@@ -310,7 +299,6 @@
                 addSub() {
                     this.subs.push({
                         nama: '',
-                        kode_subkegiatan: '',
                         user_id: '{{ Auth::user()->hasRole('admin') ? '' : Auth::id() }}', // default utk non-admin
                         target_anggaran: '',
                         periode_type: '', // kosong = ikut kegiatan

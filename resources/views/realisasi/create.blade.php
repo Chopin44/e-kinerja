@@ -1,11 +1,18 @@
 <x-app-layout>
-    <div class="max-w-5xl mx-auto space-y-6 px-4">
+    <div class="max-w-5xl mx-auto space-y-6 px-4" x-data="realisasiForm({
+            kegiatans: @js($kegiatans->map(fn($k)=>['id'=>$k->id,'nama'=>$k->nama])->values()),
+            subs: @js($subKegiatans->map(fn($s)=>['id'=>$s->id,'kegiatan_id'=>$s->kegiatan_id,'nama'=>$s->nama])->values()),
+            presetKegiatan: '{{ old('kegiatan_id') }}',
+            presetSub: '{{ old('sub_kegiatan_id') }}',
+         })">
+
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold text-gray-900">Input Realisasi Baru</h1>
-                    <p class="text-gray-500 mt-1 text-sm">Masukkan data realisasi fisik & anggaran kegiatan</p>
+                    <p class="text-gray-500 mt-1 text-sm">Masukkan data realisasi fisik & anggaran <b>subkegiatan</b>
+                    </p>
                 </div>
                 <a href="{{ route('realisasi.index') }}" class="text-gray-600 hover:text-gray-900 text-sm">
                     <i class="fas fa-arrow-left mr-1"></i> Kembali
@@ -21,20 +28,36 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                     <!-- Pilih Kegiatan -->
                     <div class="sm:col-span-2 lg:col-span-3">
-                        <label class="block text-sm font-medium text-gray-700">Kegiatan</label>
-                        <select name="kegiatan_id"
+                        <label class="block text-sm font-medium text-gray-700">Kegiatan <span
+                                class="text-red-500">*</span></label>
+                        <select name="kegiatan_id" x-model="selectedKegiatan"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
-                            <option value="">Pilih Kegiatan</option>
-                            @foreach($kegiatans as $kegiatan)
-                            <option value="{{ $kegiatan->id }}" {{ old('kegiatan_id')==$kegiatan->id ? 'selected' : ''
-                                }}>
-                                {{ $kegiatan->nama }}
-                            </option>
-                            @endforeach
+                            <option value="">— Pilih Kegiatan —</option>
+                            <template x-for="k in kegiatans" :key="k.id">
+                                <option :value="k.id" x-text="k.nama"></option>
+                            </template>
                         </select>
-
                         @error('kegiatan_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
+                    </div>
+
+                    <!-- Pilih Subkegiatan (WAJIB) -->
+                    <div class="sm:col-span-2 lg:col-span-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-medium text-gray-700">Subkegiatan <span
+                                    class="text-red-500">*</span></label>
+                            <span class="text-xs text-gray-400">Pilih Kegiatan dulu untuk menampilkan Subkegiatan</span>
+                        </div>
+
+                        <select name="sub_kegiatan_id" x-model="selectedSub" :disabled="!selectedKegiatan"
+                            class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600 disabled:bg-gray-100"
+                            required>
+                            <option value="">— Pilih Subkegiatan —</option>
+                            <template x-for="s in filteredSubs" :key="s.id">
+                                <option :value="s.id" x-text="s.nama"></option>
+                            </template>
+                        </select>
+                        @error('sub_kegiatan_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
                     <!-- Realisasi Fisik -->
@@ -87,7 +110,7 @@
                         <label class="block text-sm font-medium text-gray-700">Upload Dokumen</label>
                         <input type="file" name="dokumen[]" multiple
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600">
-                        <p class="text-xs text-gray-500 mt-1">Format: PDF, JPG, PNG. Maks 10MB per file.</p>
+                        <p class="text-xs text-gray-500 mt-1">Format: PDF, JPG, PNG, DOC, DOCX. Maks 10MB per file.</p>
                         @error('dokumen.*')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
                 </div>
@@ -106,4 +129,20 @@
             </form>
         </div>
     </div>
+
+    {{-- Alpine helper --}}
+    <script>
+        function realisasiForm({kegiatans, subs, presetKegiatan, presetSub}) {
+            return {
+                kegiatans,
+                subs,
+                selectedKegiatan: presetKegiatan || '',
+                selectedSub: presetSub || '',
+                get filteredSubs() {
+                    if (!this.selectedKegiatan) return [];
+                    return this.subs.filter(s => String(s.kegiatan_id) === String(this.selectedKegiatan));
+                },
+            }
+        }
+    </script>
 </x-app-layout>

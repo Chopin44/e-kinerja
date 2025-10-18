@@ -12,6 +12,10 @@ use App\Http\Controllers\MonitoringController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\EvaluasiController;
 
+// Tambahan: controller Sub & Rincian
+use App\Http\Controllers\SubKegiatanController;
+use App\Http\Controllers\RincianKegiatanController;
+
 Route::get('/', fn () => redirect('/login'));
 
 Route::middleware(['auth'])->group(function () {
@@ -25,20 +29,21 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN AREA (Role: admin)
+    | ADMIN AREA (Role: admin) - menggunakan Spatie middleware: role:admin
     |--------------------------------------------------------------------------
-    | Semua route di dalam group ini hanya bisa diakses user dengan role "admin"
+    | Semua route di dalam group ini hanya bisa diakses user dengan role "admin".
+    | Kalau kamu nanti mau kabid juga bisa kelola user atau evaluasi,
+    | ubah jadi ->middleware(['role:admin|kabid'])
     */
-
-
     Route::middleware(['role:admin'])->group(function () {
         // Manajemen User
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
             ->name('users.toggle-status');
-        Route::patch('users/{user}/toggle', [UserController::class, 'toggleActive'])->name('users.toggle');
+        Route::patch('users/{user}/toggle', [UserController::class, 'toggleActive'])
+            ->name('users.toggle');
 
-        // Manajemen Evaluasi (opsional, jika ingin CRUD penuh)
+        // Manajemen Evaluasi (opsional, CRUD penuh kecuali show)
         Route::resource('evaluasi', EvaluasiController::class)->except(['show']);
     });
 
@@ -46,8 +51,27 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     | KEGIATAN
     |--------------------------------------------------------------------------
+    | Resource penuh untuk Kegiatan (index, create, store, show, edit, update, destroy)
     */
     Route::resource('kegiatan', KegiatanController::class);
+
+    /*
+    |--------------------------------------------------------------------------
+    | SUBKEGIATAN & RINCIAN
+    |--------------------------------------------------------------------------
+    | Dibuat nested supaya URL & route name cocok dengan view:
+    |   - subkegiatan.* 
+    |   - subkegiatan.rincian.*  (pakai ->shallow() agar edit/destroy jadi /rincian/{rincian})
+    */
+    Route::resource('subkegiatan', SubKegiatanController::class)
+        ->only(['create','store','show','edit','update','destroy'])
+        ->middleware(['role:admin|kabid|pimpinan|staf']);
+
+    Route::resource('subkegiatan.rincian', RincianKegiatanController::class)
+        ->shallow() // menghasilkan: rincian.edit/update/destroy tanpa prefix subkegiatan
+        ->only(['index','create','store','edit','update','destroy'])
+        ->middleware(['role:admin|kabid|pimpinan|staf']);
+
 
     /*
     |--------------------------------------------------------------------------
@@ -55,6 +79,8 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::resource('realisasi', RealisasiController::class);
+
+    // Upload / hapus dokumen realisasi
     Route::post('realisasi/{realisasi}/upload-dokumen', [RealisasiController::class, 'uploadDokumen'])
         ->name('realisasi.upload-dokumen');
     Route::delete('dokumen/{dokumen}', [RealisasiController::class, 'deleteDokumen'])
@@ -72,18 +98,20 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     | MONITORING & EVALUASI
     |--------------------------------------------------------------------------
+    | - Semua user yang login bisa mengakses resource monitoring (lihat data).
+    | - Simpan evaluasi di-monitoring hanya untuk admin.
     */
     Route::resource('monitoring', MonitoringController::class)
         ->parameters(['monitoring' => 'kegiatan'])
         ->except(['create', 'store']);
 
-    // Form Evaluasi pada halaman Monitoring — hanya untuk Admin
     Route::post('monitoring/{kegiatan}/evaluasi', [MonitoringController::class, 'storeEvaluasi'])
         ->middleware('role:admin')
         ->name('monitoring.evaluasi');
 
     // Statistik dan Grafik
-    Route::get('monitoring-stats', [MonitoringController::class, 'getStats'])->name('monitoring.stats');
+    Route::get('monitoring-stats', [MonitoringController::class, 'getStats'])
+        ->name('monitoring.stats');
     Route::get('monitoring/{kegiatan}/progress-chart', [MonitoringController::class, 'getProgressChart'])
         ->name('monitoring.progress-chart');
 

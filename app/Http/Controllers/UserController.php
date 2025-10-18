@@ -30,7 +30,7 @@ class UserController extends Controller
             'nip' => 'nullable|string|max:50',
             'username' => 'required|string|unique:users,username',
             'bidang_id' => 'nullable|exists:bidangs,id',
-            'role' => 'required|in:admin,staf,pimpinan',
+            'role' => 'required|in:admin,staf,kabid',
             'password' => 'required|min:6|confirmed',
         ]);
 
@@ -64,7 +64,7 @@ class UserController extends Controller
             'nip' => 'nullable|string|max:50',
             'username' => "required|unique:users,username,{$user->id}",
             'bidang_id' => 'nullable|exists:bidangs,id',
-            'role' => 'required|in:admin,staf,pimpinan',
+            'role' => 'required|in:admin,staf,kabid',
             'password' => 'nullable|min:6|confirmed',
         ]);
 

@@ -5,7 +5,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-2xl font-semibold text-gray-900">Edit Kegiatan</h1>
-                    <p class="text-gray-500 mt-1 text-sm">Perbarui detail kegiatan yang sudah ada</p>
+                    <p class="text-gray-500 mt-1 text-sm">Perbarui detail umum kegiatan</p>
                 </div>
                 <a href="{{ route('kegiatan.index') }}" class="text-gray-600 hover:text-gray-900 text-sm">
                     <i class="fas fa-arrow-left mr-1"></i> Kembali
@@ -39,7 +39,8 @@
                             required>
                             @foreach($bidangs as $bidang)
                             <option value="{{ $bidang->id }}" {{ old('bidang_id', $kegiatan->bidang_id) == $bidang->id ?
-                                'selected' : '' }}>
+                                'selected' : '' }}
+                                >
                                 {{ $bidang->nama }}
                             </option>
                             @endforeach
@@ -54,69 +55,22 @@
                         @endif
                     </div>
 
-                    <!-- STAF ADMIN -->
-                    <div class="lg:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Staf Admin</label>
 
-                        @if(Auth::user()->hasRole('admin'))
-                        <select name="user_id"
-                            class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            required>
-                            @foreach($users as $user)
-                            <option value="{{ $user->id }}" {{ old('user_id', $kegiatan->user_id) == $user->id ?
-                                'selected' : '' }}>
-                                {{ $user->name }} - {{ $user->bidang->nama }}
-                            </option>
-                            @endforeach
-                        </select>
-                        @else
-                        <input type="text" value="{{ $kegiatan->user->name ?? Auth::user()->name }}"
-                            class="w-full mt-1 border-gray-300 text-sm rounded-md bg-gray-100 cursor-not-allowed"
-                            readonly>
-                        <input type="hidden" name="user_id" value="{{ $kegiatan->user_id ?? Auth::user()->id }}">
-                        @endif
-                    </div>
-
-                    <!-- Kategori -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Kategori</label>
-                        <select name="kategori"
-                            class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            required>
-                            <option value="pengadaan_langsung" {{ old('kategori', $kegiatan->kategori) ==
-                                'pengadaan_langsung' ? 'selected' : '' }}>Pengadaan Langsung</option>
-                            <option value="swakelola" {{ old('kategori', $kegiatan->kategori) == 'swakelola' ?
-                                'selected' : '' }}>Swakelola</option>
-                            <option value="pokir" {{ old('kategori', $kegiatan->kategori) == 'pokir' ? 'selected' : ''
-                                }}>Pokir</option>
-                        </select>
-                    </div>
-
-                    <!-- Periode -->
+                    <!-- Periode (pakai spasi: "triwulan 1" dst untuk konsisten dengan validasi) -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Periode</label>
                         <select name="periode_type"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
-                            <option value="triwulan_1" {{ old('periode_type', $kegiatan->periode_type) == 'triwulan_1' ?
-                                'selected' : '' }}>
-                                Triwulan 1
+                            @foreach (['triwulan 1','triwulan 2','triwulan 3','triwulan 4'] as $p)
+                            <option value="{{ $p }}" {{ old('periode_type', $kegiatan->periode_type) === $p ? 'selected'
+                                : '' }}
+                                >
+                                {{ ucfirst($p) }}
                             </option>
-                            <option value="triwulan_2" {{ old('periode_type', $kegiatan->periode_type) == 'triwulan_2' ?
-                                'selected' : '' }}>
-                                Triwulan 2
-                            </option>
-                            <option value="triwulan_3" {{ old('periode_type', $kegiatan->periode_type) == 'triwulan_3' ?
-                                'selected' : '' }}>
-                                Triwulan 3
-                            </option>
-                            <option value="triwulan_4" {{ old('periode_type', $kegiatan->periode_type) == 'triwulan_4' ?
-                                'selected' : '' }}>
-                                Triwulan 4
-                            </option>
+                            @endforeach
                         </select>
                     </div>
-
 
                     <!-- Tahun -->
                     <div>
@@ -125,27 +79,12 @@
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
                             @for($year = date('Y'); $year <= date('Y') + 5; $year++) <option value="{{ $year }}" {{
-                                old('tahun', $kegiatan->tahun) == $year ? 'selected' : '' }}>
+                                old('tahun', $kegiatan->tahun) == $year ? 'selected' : '' }}
+                                >
                                 {{ $year }}
                                 </option>
                                 @endfor
                         </select>
-                    </div>
-
-                    <!-- Target Fisik -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Target Fisik (%)</label>
-                        <input type="number" name="target_fisik" min="0" max="100"
-                            class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            value="{{ old('target_fisik', $kegiatan->target_fisik) }}" required>
-                    </div>
-
-                    <!-- Target Anggaran -->
-                    <div class="lg:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Target Anggaran (Rp)</label>
-                        <input type="number" name="target_anggaran" min="0"
-                            class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            value="{{ old('target_anggaran', $kegiatan->target_anggaran) }}" required>
                     </div>
 
                     <!-- Tanggal Mulai -->
@@ -153,7 +92,8 @@
                         <label class="block text-sm font-medium text-gray-700">Tanggal Mulai</label>
                         <input type="date" name="tanggal_mulai"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            value="{{ old('tanggal_mulai', $kegiatan->tanggal_mulai->format('Y-m-d')) }}" required>
+                            value="{{ old('tanggal_mulai', optional($kegiatan->tanggal_mulai)->format('Y-m-d')) }}"
+                            required>
                     </div>
 
                     <!-- Tanggal Selesai -->
@@ -161,7 +101,8 @@
                         <label class="block text-sm font-medium text-gray-700">Tanggal Selesai</label>
                         <input type="date" name="tanggal_selesai"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            value="{{ old('tanggal_selesai', $kegiatan->tanggal_selesai->format('Y-m-d')) }}" required>
+                            value="{{ old('tanggal_selesai', optional($kegiatan->tanggal_selesai)->format('Y-m-d')) }}"
+                            required>
                     </div>
 
                     <!-- Status -->
@@ -170,12 +111,11 @@
                         <select name="status"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
-                            <option value="draft" {{ old('status', $kegiatan->status) == 'draft' ? 'selected' : ''
-                                }}>Draft</option>
-                            <option value="aktif" {{ old('status', $kegiatan->status) == 'aktif' ? 'selected' : ''
-                                }}>Aktif</option>
-                            <option value="selesai" {{ old('status', $kegiatan->status) == 'selesai' ? 'selected' : ''
-                                }}>Selesai</option>
+                            @foreach (['draft'=>'Draft','aktif'=>'Aktif','selesai'=>'Selesai'] as $val=>$label)
+                            <option value="{{ $val }}" {{ old('status', $kegiatan->status) == $val ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -186,6 +126,12 @@
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             placeholder="Deskripsi kegiatan">{{ old('deskripsi', $kegiatan->deskripsi) }}</textarea>
                     </div>
+                </div>
+
+                <!-- Catatan -->
+                <div class="rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-xs p-3">
+                    <b>Catatan:</b> Target fisik, target anggaran, dan kategori sekarang dikelola pada
+                    <b>Subkegiatan/Rincian</b>. Silakan ubah di halaman Subkegiatan terkait.
                 </div>
 
                 <!-- Tombol -->
