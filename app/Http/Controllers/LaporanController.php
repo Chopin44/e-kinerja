@@ -45,9 +45,9 @@ class LaporanController extends Controller
                 'bidang_id' => $user->bidang_id,
                 'user_id' => $user->id,
             ];
-        } elseif ($user->hasRole('pimpinan')) {
+        } elseif ($user->hasRole('kabid')) {
             $scope = [
-                'role' => 'pimpinan',
+                'role' => 'kabid',
                 'bidang_id' => $user->bidang_id,
             ];
         } else {
@@ -66,7 +66,7 @@ class LaporanController extends Controller
 
         if ($user->hasRole('staf')) {
             $laporanUntuk = $user->bidang->nama ?? 'Bidang Terkait';
-        } elseif ($user->hasRole('pimpinan')) {
+        } elseif ($user->hasRole('kabid')) {
             $laporanUntuk = $user->bidang->nama ?? 'Bidang Terkait';
         } else { // admin
             $laporanUntuk = $selectedBidang?->nama ?? 'Seluruh Bidang';
@@ -118,7 +118,7 @@ class LaporanController extends Controller
         if ($scope['role'] === 'staf') {
             $query->where('user_id', $scope['user_id'])
                   ->where('bidang_id', $scope['bidang_id']);
-        } elseif ($scope['role'] === 'pimpinan') {
+        } elseif ($scope['role'] === 'kabid') {
             $query->where('bidang_id', $scope['bidang_id']);
         } elseif (!empty($scope['bidang_id'])) {
             $query->where('bidang_id', $scope['bidang_id']);
@@ -166,7 +166,7 @@ class LaporanController extends Controller
         if ($scope['role'] === 'staf') {
             $query->where('user_id', $scope['user_id'])
                   ->where('bidang_id', $scope['bidang_id']);
-        } elseif ($scope['role'] === 'pimpinan') {
+        } elseif ($scope['role'] === 'kabid') {
             $query->where('bidang_id', $scope['bidang_id']);
         } elseif (!empty($scope['bidang_id'])) {
             $query->where('bidang_id', $scope['bidang_id']);
@@ -221,7 +221,7 @@ class LaporanController extends Controller
         if ($scope['role'] === 'staf') {
             $query->where('user_id', $scope['user_id'])
                   ->where('bidang_id', $scope['bidang_id']);
-        } elseif ($scope['role'] === 'pimpinan') {
+        } elseif ($scope['role'] === 'kabid') {
             $query->where('bidang_id', $scope['bidang_id']);
         } elseif (!empty($scope['bidang_id'])) {
             $query->where('bidang_id', $scope['bidang_id']);
@@ -266,7 +266,7 @@ class LaporanController extends Controller
         if ($scope['role'] === 'staf') {
             $query->where('user_id', $scope['user_id'])
                   ->where('bidang_id', $scope['bidang_id']);
-        } elseif ($scope['role'] === 'pimpinan') {
+        } elseif ($scope['role'] === 'kabid') {
             $query->where('bidang_id', $scope['bidang_id']);
         } elseif (!empty($scope['bidang_id'])) {
             $query->where('bidang_id', $scope['bidang_id']);

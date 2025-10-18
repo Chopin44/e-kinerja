@@ -11,7 +11,7 @@ class RincianKegiatan extends Model
 
     // Tabel default: "rincian_kegiatans"
     protected $fillable = [
-    'sub_kegiatan_id','uraian','anggaran','realisasi','satuan','volume','kategori'
+    'sub_kegiatan_id','uraian','anggaran','realisasi','kategori'
     ];
 
 
@@ -28,6 +28,12 @@ class RincianKegiatan extends Model
     {
         return $this->belongsTo(SubKegiatan::class);
     }
+
+    public function realisasiRincians()
+{
+    return $this->hasMany(\App\Models\RealisasiRincian::class, 'rincian_kegiatan_id');
+}
+
 
     /** =======================
      * Accessors helper (numerik)

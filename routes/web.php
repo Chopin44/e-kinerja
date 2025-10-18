@@ -15,6 +15,7 @@ use App\Http\Controllers\EvaluasiController;
 // Tambahan: controller Sub & Rincian
 use App\Http\Controllers\SubKegiatanController;
 use App\Http\Controllers\RincianKegiatanController;
+use App\Http\Controllers\RealisasiRincianController;
 
 Route::get('/', fn () => redirect('/login'));
 
@@ -79,6 +80,14 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::resource('realisasi', RealisasiController::class);
+
+
+
+    Route::resource('rincian.realisasi-rincian', RealisasiRincianController::class)
+        ->shallow()
+        ->only(['create','store','edit','update','destroy'])
+        ->middleware(['role:admin|kabid|pimpinan|staf']);
+
 
     // Upload / hapus dokumen realisasi
     Route::post('realisasi/{realisasi}/upload-dokumen', [RealisasiController::class, 'uploadDokumen'])

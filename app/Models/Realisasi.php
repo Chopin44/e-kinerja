@@ -51,6 +51,14 @@ class Realisasi extends Model
         return $this->hasMany(Dokumen::class);
     }
 
+    
+    public function realisasiRincians()
+
+    {
+        return $this->hasMany(\App\Models\RealisasiRincian::class, 'realisasi_id');
+    }
+
+
     /** =====================
      *  Scopes
      *  ===================== */

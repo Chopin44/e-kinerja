@@ -68,7 +68,7 @@
                             <option value="">Pilih Role</option>
                             <option value="admin" {{ old('role')=='admin' ? 'selected' : '' }}>Admin</option>
                             <option value="staf" {{ old('role')=='staf' ? 'selected' : '' }}>Staf</option>
-                            <option value="pimpinan" {{ old('role')=='pimpinan' ? 'selected' : '' }}>Pimpinan</option>
+                            <option value="kabid" {{ old('role')=='kabid' ? 'selected' : '' }}>kabid</option>
                         </select>
                     </div>
 

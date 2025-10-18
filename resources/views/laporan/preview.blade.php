@@ -13,7 +13,7 @@
     } else {
     if ($user->hasRole('admin')) {
     $targetBidang = 'Seluruh Bidang';
-    } elseif ($user->hasRole('pimpinan')) {
+    } elseif ($user->hasRole('kabid')) {
     $targetBidang = $user->bidang->nama ?? 'Bidang Terkait';
     } else {
     $targetBidang = $user->bidang->nama ?? 'Bidang Terkait';
@@ -50,8 +50,8 @@
     // Role label untuk footer
     if ($user->hasRole('admin')) {
     $roleLabel = 'Administrator DINPORAPAR';
-    } elseif ($user->hasRole('pimpinan')) {
-    $roleLabel = 'Pimpinan Bidang ' . ($user->bidang->nama ?? '');
+    } elseif ($user->hasRole('kabid')) {
+    $roleLabel = 'kabid Bidang ' . ($user->bidang->nama ?? '');
     } else {
     $roleLabel = $user->name;
     }

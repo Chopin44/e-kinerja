@@ -103,9 +103,9 @@
                                 Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        @forelse($realisasis as $realisasi)
-                        <tr class="hover:bg-gray-50">
+                    @forelse($realisasis as $realisasi)
+                    <tbody x-data="{open:false}" class="bg-white divide-y divide-gray-200">
+                        <tr class="hover:bg-gray-50 align-top">
                             <td class="px-6 py-4">
                                 <div class="text-sm font-medium text-gray-900">{{ $realisasi->kegiatan->nama }}</div>
                                 <div class="text-sm text-gray-500">{{ $realisasi->kegiatan->bidang->nama }}</div>
@@ -118,16 +118,34 @@
                                 @endif
 
                                 <div class="text-xs text-gray-400 mt-1">Input oleh: {{ $realisasi->user->name }}</div>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-900">
-                                {{ $realisasi->tanggal_realisasi->format('d/m/Y') }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-medium">{{ $realisasi->realisasi_fisik }}%</div>
-                                <div class="progress-bar mt-1">
-                                    <div class="progress-fill" style="width: {{ $realisasi->realisasi_fisik }}%"></div>
+
+                                <div class="mt-2 text-xs text-gray-600">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100">
+                                        Total rincian kegiatan: <b class="ml-1">{{ $realisasi->rincian_count ??
+                                            ($realisasi->realisasiRincians->count() ?? 0) }}</b>
+                                    </span>
+                                    <span class="ml-2">
+                                        Total anggaran rincian: <b>Rp {{
+                                            number_format($realisasi->rincian_total_anggaran ??
+                                            $realisasi->realisasiRincians->sum('realisasi_anggaran'), 0, ',', '.')
+                                            }}</b>
+                                    </span>
                                 </div>
                             </td>
+
+                            <td class="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">
+                                {{ $realisasi->tanggal_realisasi->format('d/m/Y') }}
+                            </td>
+
+                            <td class="px-6 py-4">
+                                <div class="text-sm font-medium">{{ number_format($realisasi->realisasi_fisik, 0) }}%
+                                </div>
+                                <div class="progress-bar mt-1">
+                                    <div class="progress-fill" style="width: {{ (float)$realisasi->realisasi_fisik }}%">
+                                    </div>
+                                </div>
+                            </td>
+
                             <td class="px-6 py-4 text-sm">
                                 <div class="font-medium text-gray-900">
                                     Rp {{ number_format($realisasi->realisasi_anggaran, 0, ',', '.') }}
@@ -137,6 +155,7 @@
                                     Target Sub: Rp {{ number_format($targetSub, 0, ',', '.') }}
                                 </div>
                             </td>
+
                             <td class="px-6 py-4">
                                 @php
                                 $statusClasses = [
@@ -151,20 +170,94 @@
                                     {{ ucfirst($realisasi->status) }}
                                 </span>
                             </td>
+
                             <td class="px-6 py-4 text-sm space-y-1">
-                                <a href="{{ route('realisasi.show', $realisasi) }}"
-                                    class="btn-primary text-xs px-3 py-1">
-                                    <i class="fas fa-eye mr-1"></i> Detail
-                                </a>
-                                @if($realisasi->status == 'draft' && Auth::id() === $realisasi->user_id)
-                                <a href="{{ route('realisasi.edit', $realisasi) }}"
-                                    class="btn-secondary text-xs px-3 py-1">
-                                    <i class="fas fa-edit mr-1"></i> Edit
-                                </a>
+                                <div class="flex gap-1">
+                                    <button type="button" @click="open=!open" class="text-center btn-secondary">
+                                        <i class="fas fa-list mr-1"></i>
+                                    </button>
+
+                                    <a href="{{ route('realisasi.show', $realisasi) }}"
+                                        class="text-center btn-primary ">
+                                        <i class="fas fa-eye mr-1"></i>
+                                    </a>
+
+                                    {{-- @if($realisasi->status == 'draft|' && (Auth::id() === $realisasi->user_id ||
+                                    Auth::user()->hasRole('admin|kabid'))) --}}
+                                    <a href="{{ route('realisasi.edit', $realisasi) }}"
+                                        class="text-center btn-secondary ">
+                                        <i class="fas fa-edit mr-1 text-center"></i>
+                                    </a>
+
+                                    <form action="{{ route('realisasi.destroy', $realisasi) }}" method="POST"
+                                        onsubmit="return confirm('Hapus realisasi ini beserta rincian dan dokumennya?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn-danger text-center">
+                                            <i class="fas fa-trash mr-1 text-center"></i>
+                                        </button>
+                                    </form>
+                                    {{-- @endif --}}
+                                </div>
+                            </td>
+                        </tr>
+
+                        {{-- PANEL RINCIAN --}}
+                        <tr x-show="open" x-cloak>
+                            <td colspan="6" class="bg-gray-50 px-6 py-4">
+                                @php $rows = $realisasi->realisasiRincians; @endphp
+                                @if($rows->isEmpty())
+                                <div class="text-sm text-gray-500">Belum ada realisasi rincian.</div>
+                                @else
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full border text-xs divide-y divide-gray-200">
+                                        <thead class="bg-gray-100 text-gray-700">
+                                            <tr>
+                                                <th class="px-3 py-2 text-left">Uraian Rincian</th>
+                                                <th class="px-3 py-2 text-left">Kategori</th>
+                                                <th class="px-3 py-2 text-left">Realisasi Fisik</th>
+                                                <th class="px-3 py-2 text-left">Realisasi Anggaran</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            @foreach($rows as $rr)
+                                            <tr class="hover:bg-white">
+                                                <td class="px-3 py-2">
+                                                    {{ $rr->rincianKegiatan->uraian ?? '-' }}
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    @php
+                                                    $kat = $rr->rincianKegiatan->kategori ?? null;
+                                                    @endphp
+                                                    {{ $kat ? ucwords(str_replace('_',' ',$kat)) : '-' }}
+                                                </td>
+                                                <td class="px-3 py-2 whitespace-nowrap">
+                                                    {{ $rr->realisasi_fisik !== null ?
+                                                    number_format($rr->realisasi_fisik, 2).' %' : '-' }}
+                                                </td>
+                                                <td class="px-3 py-2 whitespace-nowrap">
+                                                    Rp {{ number_format($rr->realisasi_anggaran ?? 0, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                        <tfoot class="bg-gray-50">
+                                            <tr class="font-semibold">
+                                                <td class="px-3 py-2 text-right" colspan="3">Total Anggaran Rincian</td>
+                                                <td class="px-3 py-2">
+                                                    Rp {{ number_format($rows->sum('realisasi_anggaran'), 0, ',', '.')
+                                                    }}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                                 @endif
                             </td>
                         </tr>
-                        @empty
+                    </tbody>
+                    @empty
+                    <tbody>
                         <tr>
                             <td colspan="6" class="px-6 py-8 text-center text-gray-500">
                                 <i class="fas fa-inbox text-4xl mb-3"></i>
@@ -173,8 +266,8 @@
                                     realisasi pertama</a>
                             </td>
                         </tr>
-                        @endforelse
                     </tbody>
+                    @endforelse
                 </table>
             </div>
 
