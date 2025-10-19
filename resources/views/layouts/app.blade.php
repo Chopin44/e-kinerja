@@ -92,10 +92,10 @@
                         <i class="fas fa-tasks mr-3"></i> Input Realisasi
                     </a>
 
-                    <a href="{{ route('monitoring.index') }}"
+                    {{-- <a href="{{ route('monitoring.index') }}"
                         class="nav-link block px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-20 {{ request()->routeIs('monitoring.*') ? 'active' : '' }}">
                         <i class="fas fa-chart-bar mr-3"></i> Monitoring
-                    </a>
+                    </a> --}}
 
                     <a href="{{ route('laporan.index') }}"
                         class="nav-link block px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-20 {{ request()->routeIs('laporan.*') ? 'active' : '' }}">

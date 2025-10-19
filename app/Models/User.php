@@ -1,5 +1,4 @@
 <?php
-// app/Models/User.php
 
 namespace App\Models;
 
@@ -14,20 +13,30 @@ class User extends Authenticatable
     use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
-        'name', 'username', 'nip', 'bidang_id', 'role', 'password', 'is_active', 'last_login_at'
+        'name',
+        'username',
+        'nip',
+        'bidang_id',
+        // 'role',  // ⛔️ HAPUS: kita tidak menyimpan role di kolom users
+        'password',
+        'is_active',
+        'last_login_at',
     ];
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
-        'last_login_at' => 'datetime',
-        'is_active' => 'boolean',
+        'last_login_at'     => 'datetime',
+        'is_active'         => 'boolean',
     ];
 
-    // Relationships
+    /** =======================
+     *  Relationships
+     *  ======================= */
     public function bidang()
     {
         return $this->belongsTo(Bidang::class);
@@ -48,20 +57,30 @@ class User extends Authenticatable
         return $this->hasMany(Evaluasi::class, 'evaluator_id');
     }
 
-    // Scopes
+    /** =======================
+     *  Scopes
+     *  ======================= */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeByRole($query, $role)
+    /**
+     * Scope by role via Spatie (bukan kolom).
+     * Contoh pakai: User::byRole('admin')->get()
+     */
+    public function scopeByRole($query, string $roleName)
     {
-        return $query->where('role', $role);
+        // Spatie menyediakan scope "role" langsung di query builder juga,
+        // tapi kita bungkus agar konsisten dengan pemakaian sebelumnya.
+        return $query->role($roleName);
     }
 
-    // Accessors
-    public function getIsAdminAttribute()
+    /** =======================
+     *  Accessors
+     *  ======================= */
+    public function getIsAdminAttribute(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin');
     }
 }

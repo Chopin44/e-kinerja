@@ -146,10 +146,10 @@
         }
 
         function exportPdf() {
-            const form = document.getElementById('laporanForm');
-            form.action = '{{ route('laporan.export.pdf') }}';
-            form.method = 'POST';
-            form.submit();
+        const form = document.getElementById('laporanForm');
+        const fd = new FormData(form);
+        const qs = new URLSearchParams(fd).toString();
+        window.open(`{{ route('laporan.export.pdf') }}?${qs}`, '_blank');
         }
 
         function printLaporan() {
@@ -167,7 +167,7 @@
                     <title>Cetak Laporan</title>
                     <link href="{{ mix('resources/css/app.css') }}" rel="stylesheet">
                     <style>
-                        @page { size: A4; margin: 12mm; }
+                        @page { size: A4 landscape; margin: 12mm; }
                         html, body {
                             font-family: 'Inter', sans-serif;
                             background: white;
