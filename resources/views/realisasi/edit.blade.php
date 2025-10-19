@@ -79,6 +79,7 @@
                         </label>
 
                         <select name="kegiatan_id" x-model="selectedKegiatan" @change="onKegiatanChange()"
+                            x-init="$nextTick(() => { $el.value = selectedKegiatan })"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
                             <option value="">— Pilih Kegiatan —</option>
@@ -107,13 +108,13 @@
                             <span class="text-xs text-gray-400">Pilih Kegiatan untuk menampilkan Subkegiatan</span>
                         </div>
 
-                        <select name="sub_kegiatan_id" x-model="selectedSub" :disabled="!selectedKegiatan"
-                            @change="onSubChange()"
+                        <select name="sub_kegiatan_id" x-model="selectedSub" :value="selectedSub"
+                            :disabled="!selectedKegiatan" @change="onSubChange()"
+                            x-init="$nextTick(() => { $el.value = selectedSub })"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600 disabled:bg-gray-100"
                             required>
                             <option value="">— Pilih Subkegiatan —</option>
 
-                            {{-- Fallback jika sub terpilih tidak ada di filteredSubs --}}
                             <template
                                 x-if="selectedSub && !filteredSubs.some(s => String(s.id) === String(selectedSub))">
                                 <option :value="String(selectedSub)" x-text="dbSubNama || '(Subkegiatan saat ini)'">
@@ -125,6 +126,7 @@
                             </template>
                         </select>
 
+
                         @error('sub_kegiatan_id')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -134,6 +136,7 @@
                         <input type="number" name="realisasi_fisik" min="0" max="100" x-model="fisikHeader"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             placeholder="0-100">
+
                         @error('realisasi_fisik')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -143,6 +146,7 @@
                         <input type="date" name="tanggal_realisasi" x-model="tanggalHeader"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             required>
+
                         @error('tanggal_realisasi')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -152,6 +156,12 @@
                         <input type="text" name="lokasi" x-model="lokasiHeader"
                             class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
                             placeholder="Masukkan lokasi kegiatan">
+
+                        <p class="text-xs text-gray-400 mt-1">
+                            debug:
+                            Lokasi = <span x-text="lokasiHeader"></span><br>
+                        </p>
+
                         @error('lokasi')<p class="text-red-500 text-sm mt-1">{{ $message }}</p>@enderror
                     </div>
 
@@ -291,8 +301,10 @@
 
     <script>
         function realisasiEditForm(cfg) {
+             
             const toStr = v => (v === undefined || v === null) ? '' : String(v);
             return {
+                
                 // master
                 kegiatans: cfg.kegiatans || [],
                 subs: cfg.subs || [],
@@ -306,9 +318,14 @@
                 selectedKegiatan: toStr(cfg.presetKegiatan) || toStr(cfg.dbKegiatan),
                 selectedSub:      toStr(cfg.presetSub)      || toStr(cfg.dbSub),
                 tanggalHeader:    cfg.presetTanggal || cfg.dbTanggal || '',
-                lokasiHeader:     (cfg.presetLokasi ?? cfg.dbLokasi ?? ''),
+                lokasiHeader:     cfg.presetLokasi || cfg.dbLokasi || '',
                 catatanHeader:    (cfg.presetCatatan ?? cfg.dbCatatan ?? ''),
                 fisikHeader:      toStr(cfg.presetFisik) || toStr(cfg.dbFisik),
+
+
+
+
+
 
                 // detail rows
                 rows: Array.isArray(cfg.presetRows) && cfg.presetRows.length ? cfg.presetRows : [{
@@ -320,6 +337,8 @@
                     lokasi: cfg.presetLokasi ?? cfg.dbLokasi ?? '',
                     catatan: '',
                 }],
+
+       
 
                 get filteredSubs() {
                     if (!this.selectedKegiatan) return [];
@@ -377,6 +396,7 @@
                     const n = Number(v || 0);
                     return 'Rp ' + n.toLocaleString('id-ID', {maximumFractionDigits: 0});
                 },
+                
             }
         }
     </script>

@@ -25,7 +25,6 @@ class RealisasiRincianController extends Controller
 
         $data = $request->validate([
             'realisasi_anggaran' => ['required','numeric','min:0'],
-            'realisasi_volume'   => ['nullable','numeric','min:0'],
             'tanggal_realisasi'  => ['required','date'],
             'lokasi'             => ['nullable','string','max:255'],
             'catatan'            => ['nullable','string'],
@@ -62,7 +61,6 @@ class RealisasiRincianController extends Controller
 
         $data = $request->validate([
             'realisasi_anggaran' => ['required','numeric','min:0'],
-            'realisasi_volume'   => ['nullable','numeric','min:0'],
             'tanggal_realisasi'  => ['required','date'],
             'lokasi'             => ['nullable','string','max:255'],
             'catatan'            => ['nullable','string'],

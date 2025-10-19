@@ -139,7 +139,6 @@ class RealisasiController extends Controller
             'rincians.*.rincian_kegiatan_id'                => ['required','exists:rincian_kegiatans,id'],
             'rincians.*.realisasi_anggaran'                 => ['required','numeric','min:0'],
             'rincians.*.realisasi_fisik'                    => ['nullable','numeric','min:0','max:100'],
-            'rincians.*.realisasi_volume'                   => ['nullable','numeric','min:0'],
             'rincians.*.tanggal_realisasi'                  => ['nullable','date'],
             'rincians.*.lokasi'                             => ['nullable','string','max:255'],
             'rincians.*.catatan'                            => ['nullable','string'],
@@ -187,7 +186,6 @@ class RealisasiController extends Controller
                 'user_id'             => Auth::id(),
                 'realisasi_anggaran'  => $row['realisasi_anggaran'],
                 'realisasi_fisik'     => $row['realisasi_fisik'] ?? null,
-                'realisasi_volume'    => $row['realisasi_volume'] ?? null,
                 'tanggal_realisasi'   => $row['tanggal_realisasi'] ?? $request->tanggal_realisasi,
                 'lokasi'              => $row['lokasi'] ?? $request->lokasi,
                 'catatan'             => $row['catatan'] ?? null,
@@ -324,7 +322,6 @@ class RealisasiController extends Controller
             'rincians.*.rincian_kegiatan_id'         => ['required','exists:rincian_kegiatans,id'],
             'rincians.*.realisasi_anggaran'          => ['required','numeric','min:0'],
             'rincians.*.realisasi_fisik'             => ['nullable','numeric','min:0','max:100'],
-            'rincians.*.realisasi_volume'            => ['nullable','numeric','min:0'],
             'rincians.*.tanggal_realisasi'           => ['nullable','date'],
             'rincians.*.lokasi'                      => ['nullable','string','max:255'],
             'rincians.*.catatan'                     => ['nullable','string'],
@@ -373,7 +370,6 @@ class RealisasiController extends Controller
                     'user_id'             => Auth::id(),
                     'realisasi_anggaran'  => $row['realisasi_anggaran'],
                     'realisasi_fisik'     => $row['realisasi_fisik'] ?? null,
-                    'realisasi_volume'    => $row['realisasi_volume'] ?? null,
                     'tanggal_realisasi'   => $row['tanggal_realisasi'] ?? $request->tanggal_realisasi,
                     'lokasi'              => $row['lokasi'] ?? $request->lokasi,
                     'catatan'             => $row['catatan'] ?? null,
@@ -431,7 +427,7 @@ class RealisasiController extends Controller
             'subKegiatan',
             'user',
             'dokumens',
-            'rincians.rincianKegiatan' // tampilkan detail juga
+            'realisasiRincians.rincianKegiatan' // tampilkan detail juga
         ]);
         return view('realisasi.show', compact('realisasi'));
     }

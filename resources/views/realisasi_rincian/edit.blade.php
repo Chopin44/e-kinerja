@@ -21,14 +21,6 @@
                         @error('realisasi_anggaran')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Realisasi Volume</label>
-                        <input type="number" name="realisasi_volume" min="0" step="0.01"
-                            class="w-full mt-1 border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                            value="{{ old('realisasi_volume', $realisasi->realisasi_volume) }}">
-                        @error('realisasi_volume')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                        <p class="text-[11px] text-gray-500 mt-1">Satuan: {{ $rincian->satuan ?? '-' }}</p>
-                    </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Tanggal Realisasi</label>

@@ -131,7 +131,6 @@
                                     <th class="text-left font-semibold px-3 py-2.5 w-[38%]">Rincian</th>
                                     <th class="text-left font-semibold px-3 py-2.5 w-[18%]">Realisasi Anggaran (Rp)</th>
                                     <th class="text-left font-semibold px-3 py-2.5 w-[12%]">Fisik %</th>
-                                    <th class="text-left font-semibold px-3 py-2.5 w-[12%]">Volume</th>
                                     <th class="text-left font-semibold px-3 py-2.5 w-[14%]">Tanggal</th>
                                     <th class="text-left font-semibold px-3 py-2.5 w-[6%]">Aksi</th>
                                 </tr>
@@ -171,14 +170,6 @@
                                                 placeholder="0-100">
                                         </td>
 
-                                        <!-- Volume (opsional) -->
-                                        <td class="px-3 py-2.5">
-                                            <input type="number" min="0" step="0.01"
-                                                :name="`rincians[${i}][realisasi_volume]`"
-                                                x-model.number="row.realisasi_volume"
-                                                class="w-full border-gray-300 text-sm rounded-md focus:ring-green-600 focus:border-green-600"
-                                                placeholder="0">
-                                        </td>
 
                                         <!-- Tanggal (default dari header) -->
                                         <td class="px-3 py-2.5">
@@ -253,7 +244,6 @@
                             rincian_kegiatan_id: r.rincian_kegiatan_id || '',
                             realisasi_anggaran:  parseFloat(r.realisasi_anggaran || 0),
                             realisasi_fisik:     r.realisasi_fisik ?? '',
-                            realisasi_volume:    r.realisasi_volume ?? '',
                             tanggal_realisasi:   r.tanggal_realisasi || this.tanggalHeader || '',
                             lokasi:              r.lokasi || this.lokasiHeader || '',
                             catatan:             r.catatan || '',
@@ -275,7 +265,6 @@
                         rincian_kegiatan_id: '',
                         realisasi_anggaran: '',
                         realisasi_fisik: '',
-                        realisasi_volume: '',
                         tanggal_realisasi: this.tanggalHeader || '',
                         lokasi: this.lokasiHeader || '',
                         catatan: '',

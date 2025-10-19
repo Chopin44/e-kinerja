@@ -270,12 +270,6 @@
                                                         x-model="r.satuan" placeholder="paket/unit/meter">
                                                 </div>
 
-                                                <div>
-                                                    <label class="block text-xs text-gray-600">Volume</label>
-                                                    <input type="number" min="0" class="form-input"
-                                                        :name="`subkegiatans[${si}][rincian][${ri}][volume]`"
-                                                        x-model="r.volume">
-                                                </div>
 
                                                 <div class="text-right">
                                                     <button type="button" @click="removeRincian(si, ri)"
@@ -313,8 +307,7 @@
                         uraian: '',
                         kategori: '',
                         anggaran: '',
-                        satuan: '',
-                        volume: ''
+                        satuan: ''
                     });
                 },
                 removeRincian(i, j){

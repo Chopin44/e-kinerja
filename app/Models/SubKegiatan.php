@@ -15,7 +15,6 @@ class SubKegiatan extends Model
     protected $fillable = [
         'kegiatan_id',
         'user_id',
-        'kode_subkegiatan',
         'nama',
         'deskripsi',
         'target_anggaran',

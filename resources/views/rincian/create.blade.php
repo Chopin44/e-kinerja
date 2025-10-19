@@ -54,12 +54,7 @@
                         @error('satuan') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Volume</label>
-                        <input type="number" min="0" name="volume" value="{{ old('volume') }}"
-                            class="w-full mt-1 border-gray-300 rounded-md text-sm">
-                        @error('volume') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
-                    </div>
+
                 </div>
 
                 <div class="flex justify-end gap-2">

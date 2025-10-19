@@ -18,7 +18,6 @@ class RincianKegiatan extends Model
     protected $casts = [
         'anggaran' => 'decimal:2',
         'realisasi' => 'decimal:2',
-        'volume' => 'integer',
     ];
 
     /** =======================
@@ -30,9 +29,9 @@ class RincianKegiatan extends Model
     }
 
     public function realisasiRincians()
-{
-    return $this->hasMany(\App\Models\RealisasiRincian::class, 'rincian_kegiatan_id');
-}
+    {
+        return $this->hasMany(\App\Models\RealisasiRincian::class, 'rincian_kegiatan_id');
+    }
 
 
     /** =======================

@@ -14,7 +14,6 @@ class RealisasiRincian extends Model
         'user_id',
         'realisasi_anggaran',
         'realisasi_fisik',
-        'realisasi_volume',
         'tanggal_realisasi',
         'lokasi',
         'catatan',
@@ -24,7 +23,6 @@ class RealisasiRincian extends Model
         'tanggal_realisasi'  => 'date',
         'realisasi_anggaran' => 'decimal:2',
         'realisasi_fisik'    => 'decimal:2',
-        'realisasi_volume'   => 'decimal:2',
     ];
 
     public function realisasi()
