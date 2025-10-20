@@ -192,7 +192,8 @@
                                             <tr>
                                                 <th class="px-3 py-2 text-left">Nama Subkegiatan</th>
                                                 <th class="px-3 py-2 text-left">Staf Admin</th>
-                                                <th class="px-3 py-2 text-left">Target</th>
+                                                <th class="px-3 py-2 text-left">Target Anggaran</th>
+                                                <th class="px-3 py-2 text-left">Target Fisik</th>
                                                 <th class="px-3 py-2 text-left">Total Rincian</th>
                                                 <th class="px-3 py-2 text-left">Progress</th>
                                                 <th class="px-3 py-2 text-left">Rincian</th>
@@ -216,22 +217,26 @@
                                             $totalRincian = (float) $sub->rincianKegiatans->sum('anggaran');
                                             $target = (float) ($sub->target_anggaran ?? 0);
 
-                                            // Progress anggaran (sementara 0 kalau realisasi belum dihubungkan)
-                                            $budgetProgress = 0;
+                                            $realisasiAnggaran = $realisasiPerSub[$sub->id] ?? 0;
+                                            $budgetProgress = $sub->target_anggaran > 0
+                                            ? ($realisasiAnggaran / $sub->target_anggaran) * 100
+                                            : 0;
 
-                                            $targetFisik = isset($sub->target_fisik) ? (float)$sub->target_fisik : 0;
-                                            $realisasiFisik = isset($sub->realisasi_fisik) ?
-                                            (float)$sub->realisasi_fisik : 0;
-                                            $fisikProgress = $targetFisik > 0 ? ($realisasiFisik / $targetFisik) * 100 :
-                                            0;
-                                            $hasFisikData = ($targetFisik > 0 || $realisasiFisik > 0);
+
+                                            // ✅ Fisik
+                                            $fisikProgress = (float) ($sub->realisasi_fisik ?? 0);
+                                            $hasFisikData = $fisikProgress > 0;
                                             @endphp
+
 
                                             <tr class="hover:bg-white">
                                                 <td class="px-3 py-2 font-medium text-gray-900">{{ $sub->nama }}</td>
                                                 <td class="px-3 py-2 text-gray-700">{{ $sub->user->name ?? '-' }}</td>
                                                 <td class="px-3 py-2 whitespace-nowrap">
                                                     Rp {{ number_format($target, 0, ',', '.') }}
+                                                </td>
+                                                <td class="px-3 py-2 whitespace-nowrap">
+                                                    {{number_format($sub->target_fisik ?? 0, 1) }}%
                                                 </td>
                                                 <td class="px-3 py-2 whitespace-nowrap">
                                                     Rp {{ number_format($totalRincian, 0, ',', '.') }}
@@ -242,12 +247,11 @@
                                                             <div
                                                                 class="flex justify-between text-xs text-gray-600 mb-1">
                                                                 <span>Fisik</span>
-                                                                <span>{{ number_format($hasFisikData ? $fisikProgress :
-                                                                    0, 1) }}%</span>
+                                                                <span>{{ number_format($fisikProgress, 1) }}%</span>
                                                             </div>
                                                             <div class="progress-bar">
                                                                 <div class="progress-fill"
-                                                                    style="width: {{ max(0,min(100,$hasFisikData ? $fisikProgress : 0)) }}%">
+                                                                    style="width: {{ max(0, min(100, $fisikProgress)) }}%">
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -308,6 +312,8 @@
                                                                         Kategori</th>
                                                                     <th class="px-3 py-2 text-left font-semibold">
                                                                         Anggaran</th>
+                                                                    <th class="px-3 py-2 text-left font-semibold">
+                                                                        Fisik</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody class="divide-y divide-slate-100">
@@ -332,6 +338,9 @@
                                                                             Rp {{ number_format($r->anggaran ?? 0, 0,
                                                                             ',', '.') }}
                                                                         </span>
+                                                                    </td>
+                                                                    <td class="px-2 py-1">{{
+                                                                        number_format($r->target_fisik ?? 0, 1) }}%
                                                                     </td>
                                                                 </tr>
                                                                 @endforeach

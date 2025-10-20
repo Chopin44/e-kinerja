@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/KegiatanController.php
 
 namespace App\Http\Controllers;
 
@@ -21,50 +20,54 @@ class KegiatanController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-
         $query = Kegiatan::query();
 
         // Filter tahun
         $query->when(
             $request->filled('tahun'),
             fn ($q) => $q->byTahun($request->tahun),
-            fn ($q) => $q->byTahun(Carbon::now()->year)
+            fn ($q) => $q->byTahun(\Carbon\Carbon::now()->year)
         );
+
+        // Hitung total realisasi per sub
+        $realisasiPerSub = \App\Models\RealisasiRincian::selectRaw('rincian_kegiatans.sub_kegiatan_id, SUM(realisasi_rincians.realisasi_anggaran) as total_realisasi')
+            ->join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
+            ->groupBy('rincian_kegiatans.sub_kegiatan_id')
+            ->pluck('total_realisasi', 'rincian_kegiatans.sub_kegiatan_id');
 
         // Filter status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
+        // Role-based data loading
         if ($user->hasRole('staf')) {
-            // HANYA kegiatan di bidangnya, dan yang punya sub milik dia
             $query->where('bidang_id', $user->bidang_id)
-                  ->whereHas('subKegiatans', function ($q) use ($user) {
-                      $q->where('user_id', $user->id);
-                  })
-                  ->with([
-                      'bidang:id,nama',
-                      // Eager-load hanya SUB milik staf yang login + user & rincian
-                      'subKegiatans' => function ($q) use ($user) {
-                          $q->select('id','kegiatan_id','user_id','nama','target_anggaran','periode_type','tahun')
-                            ->where('user_id', $user->id)
-                            ->with([
-                                'user:id,name',
-                                'rincianKegiatans:id,sub_kegiatan_id,uraian,anggaran,kategori',
-                            ]);
-                      },
-                  ]);
-
+                ->whereHas('subKegiatans', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                })
+                ->with([
+                    'bidang:id,nama',
+                    'subKegiatans' => function ($q) use ($user) {
+                        $q->select('id','kegiatan_id','user_id','nama',
+                                'target_anggaran','target_fisik',
+                                'realisasi_anggaran','realisasi_fisik',
+                                'periode_type','tahun')
+                        ->where('user_id', $user->id)
+                        ->with([
+                            'user:id,name',
+                            'rincianKegiatans:id,sub_kegiatan_id,uraian,anggaran,target_fisik,kategori',
+                        ]);
+                    },
+                ]);
         } elseif ($user->hasRole('pimpinan')) {
-            // Semua sub di bidangnya (monitoring)
             $query->where('bidang_id', $user->bidang_id)
-                  ->with([
-                      'bidang:id,nama',
-                      'subKegiatans:id,kegiatan_id,user_id,nama,target_anggaran,periode_type,tahun',
-                      'subKegiatans.user:id,name',
-                      'subKegiatans.rincianKegiatans:id,sub_kegiatan_id,uraian,anggaran,kategori',
-                  ]);
-
+                ->with([
+                    'bidang:id,nama',
+                    'subKegiatans:id,kegiatan_id,user_id,nama,target_anggaran,target_fisik,realisasi_anggaran,realisasi_fisik,periode_type,tahun',
+                    'subKegiatans.user:id,name',
+                    'subKegiatans.rincianKegiatans:id,sub_kegiatan_id,uraian,anggaran,target_fisik,kategori',
+                ]);
         } else { // admin
             if ($request->filled('bidang_id')) {
                 $query->where('bidang_id', $request->bidang_id);
@@ -72,16 +75,16 @@ class KegiatanController extends Controller
 
             $query->with([
                 'bidang:id,nama',
-                'subKegiatans:id,kegiatan_id,user_id,nama,target_anggaran,periode_type,tahun',
+                'subKegiatans:id,kegiatan_id,user_id,nama,target_anggaran,target_fisik,realisasi_anggaran,realisasi_fisik,periode_type,tahun',
                 'subKegiatans.user:id,name',
-                'subKegiatans.rincianKegiatans:id,sub_kegiatan_id,uraian,anggaran,kategori',
+                'subKegiatans.rincianKegiatans:id,sub_kegiatan_id,uraian,anggaran,target_fisik,kategori',
             ]);
         }
 
         $kegiatans = $query->orderBy('nama')->paginate(10);
-        $bidangs   = Bidang::active()->get();
+        $bidangs   = \App\Models\Bidang::active()->get();
 
-        return view('kegiatan.index', compact('kegiatans', 'bidangs'));
+        return view('kegiatan.index', compact('kegiatans', 'bidangs', 'realisasiPerSub'));
     }
 
     public function create()
@@ -92,7 +95,6 @@ class KegiatanController extends Controller
             $bidangs = Bidang::active()->get();
             $users   = User::active()->with('bidang:id,nama')->get();
 
-            // Kegiatan existing (mis. untuk tambah sub di kegiatan yang sama)
             $kegiatansExisting = Kegiatan::with('bidang:id,nama')
                 ->orderByDesc('tahun')
                 ->orderBy('nama')
@@ -114,7 +116,6 @@ class KegiatanController extends Controller
     public function store(Request $request)
     {
         $auth = Auth::user();
-
         $mode = $request->input('mode', 'baru');
 
         // Validasi dasar berbeda untuk 2 mode
@@ -127,6 +128,7 @@ class KegiatanController extends Controller
             'tanggal_mulai'   => ['required','date'],
             'tanggal_selesai' => ['required','date','after_or_equal:tanggal_mulai'],
             'tahun'           => ['required','integer','min:2020','max:2100'],
+            'target_fisik'    => ['nullable','numeric','min:0','max:100'], // default 0
         ];
 
         $rulesKegiatanExisting = [
@@ -138,6 +140,7 @@ class KegiatanController extends Controller
             'subkegiatans.*.nama'                   => ['required_with:subkegiatans','string','max:255'],
             'subkegiatans.*.user_id'                => ['nullable','exists:users,id'],
             'subkegiatans.*.target_anggaran'        => ['required_with:subkegiatans','numeric','min:0'],
+            'subkegiatans.*.target_fisik'           => ['required_with:subkegiatans','numeric','min:0','max:100'],
             'subkegiatans.*.periode_type'           => ['nullable','in:triwulan 1,triwulan 2,triwulan 3,triwulan 4'],
             'subkegiatans.*.tahun'                  => ['nullable','integer','min:2020','max:2100'],
             'subkegiatans.*.deskripsi'              => ['nullable','string'],
@@ -145,6 +148,7 @@ class KegiatanController extends Controller
             'subkegiatans.*.rincian.*.uraian'       => ['required_with:subkegiatans.*.rincian','string','max:255'],
             'subkegiatans.*.rincian.*.kategori'     => ['nullable','in:pengadaan_langsung,swakelola,pokir'],
             'subkegiatans.*.rincian.*.anggaran'     => ['nullable','numeric','min:0'],
+            'subkegiatans.*.rincian.*.target_fisik' => ['nullable','numeric','min:0','max:100'],
         ];
 
         $validated = $request->validate(
@@ -153,7 +157,7 @@ class KegiatanController extends Controller
                 : array_merge($rulesKegiatanBaru, $rulesSubRinci)
         );
 
-        // Override non-admin: kunci bidang & user ke miliknya
+        // Override non-admin
         if (!$auth->hasRole('admin')) {
             $validated['bidang_id'] = $auth->bidang_id ?? ($validated['bidang_id'] ?? null);
             $validated['user_id']   = $auth->id       ?? ($validated['user_id'] ?? null);
@@ -161,10 +165,8 @@ class KegiatanController extends Controller
 
         DB::transaction(function () use ($validated, $mode) {
             if ($mode === 'existing') {
-                // Pakai kegiatan yang sudah ada
                 $kegiatan = Kegiatan::findOrFail($validated['existing_kegiatan_id']);
             } else {
-                // Buat Kegiatan baru (tanpa kategori/target di level kegiatan)
                 $kegiatan = Kegiatan::create([
                     'nama'             => $validated['nama'],
                     'deskripsi'        => $validated['deskripsi'] ?? null,
@@ -174,11 +176,12 @@ class KegiatanController extends Controller
                     'tanggal_mulai'    => $validated['tanggal_mulai'],
                     'tanggal_selesai'  => $validated['tanggal_selesai'],
                     'tahun'            => $validated['tahun'],
+                    'target_fisik'     => $validated['target_fisik'] ?? 0, // default 0
                     'status'           => 'aktif',
                 ]);
             }
 
-            // Tambah Subkegiatan (+ Rincian) ke kegiatan terpilih/baru
+            // Subkegiatan + rincian
             foreach (($validated['subkegiatans'] ?? []) as $sub) {
                 $subModel = SubKegiatan::create([
                     'kegiatan_id'      => $kegiatan->id,
@@ -186,6 +189,7 @@ class KegiatanController extends Controller
                     'nama'             => $sub['nama'],
                     'deskripsi'        => $sub['deskripsi'] ?? null,
                     'target_anggaran'  => $sub['target_anggaran'],
+                    'target_fisik'     => $sub['target_fisik'] ?? 0,
                     'periode_type'     => $sub['periode_type'] ?? $kegiatan->periode_type,
                     'tahun'            => $sub['tahun'] ?? $kegiatan->tahun,
                 ]);
@@ -196,12 +200,13 @@ class KegiatanController extends Controller
                         'uraian'          => $rinci['uraian'],
                         'kategori'        => $rinci['kategori'] ?? null,
                         'anggaran'        => $rinci['anggaran'] ?? null,
+                        'target_fisik'    => $rinci['target_fisik'] ?? 0, // baru
                     ]);
                 }
             }
         });
 
-        return redirect()->route('kegiatan.index')->with('success', 'Data tersimpan.');
+        return redirect()->route('kegiatan.index')->with('success', 'Data kegiatan berhasil disimpan.');
     }
 
     public function show(Kegiatan $kegiatan)
@@ -221,18 +226,14 @@ class KegiatanController extends Controller
         $this->authorize('update', $kegiatan);
 
         $auth = Auth::user();
-
         if ($auth->hasRole('admin')) {
-            // Admin boleh pilih bidang & user manapun
             $bidangs = Bidang::active()->get();
             $users   = User::active()->with('bidang:id,nama')->get();
         } else {
-            // Non-admin: kunci ke bidang & user dirinya
             $bidangs = Bidang::where('id', $auth->bidang_id)->get();
             $users   = User::where('id', $auth->id)->with('bidang:id,nama')->get();
         }
 
-        // Tidak perlu load sub/rincian di halaman edit kegiatan (mereka dikelola di halaman khusus)
         return view('kegiatan.edit', compact('kegiatan', 'bidangs', 'users'));
     }
 
@@ -240,7 +241,6 @@ class KegiatanController extends Controller
     {
         $this->authorize('update', $kegiatan);
 
-        // Validasi hanya field di level kegiatan
         $validated = $request->validate([
             'nama'            => ['required','string','max:255'],
             'deskripsi'       => ['nullable','string'],
@@ -250,13 +250,13 @@ class KegiatanController extends Controller
             'tanggal_selesai' => ['required','date','after_or_equal:tanggal_mulai'],
             'tahun'           => ['required','integer','min:2020','max:2100'],
             'status'          => ['required','in:draft,aktif,selesai'],
+            'target_fisik'    => ['nullable','numeric','min:0','max:100'],
         ]);
 
-        // Non-admin tidak boleh memindah bidang/user semaunya — paksa ke miliknya
         $auth = Auth::user();
         if (!$auth->hasRole('admin')) {
             $validated['bidang_id'] = $auth->bidang_id ?? $kegiatan->bidang_id;
-            $validated['user_id']   = $auth->id       ?? $kegiatan->user_id;
+            $validated['user_id']   = $auth->id ?? $kegiatan->user_id;
         }
 
         $kegiatan->update([
@@ -268,17 +268,15 @@ class KegiatanController extends Controller
             'tanggal_selesai' => $validated['tanggal_selesai'],
             'tahun'           => $validated['tahun'],
             'status'          => $validated['status'],
+            'target_fisik'    => $validated['target_fisik'] ?? $kegiatan->target_fisik,
         ]);
 
-        return redirect()
-            ->route('kegiatan.index')
-            ->with('success', 'Kegiatan berhasil diperbarui!');
+        return redirect()->route('kegiatan.index')->with('success', 'Kegiatan berhasil diperbarui!');
     }
 
     public function destroy(Kegiatan $kegiatan)
     {
         $this->authorize('delete', $kegiatan);
-
         $kegiatan->delete();
 
         return redirect()->route('kegiatan.index')->with('success', 'Kegiatan berhasil dihapus!');

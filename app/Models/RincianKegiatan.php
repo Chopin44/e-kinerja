@@ -9,20 +9,27 @@ class RincianKegiatan extends Model
 {
     use HasFactory;
 
-    // Tabel default: "rincian_kegiatans"
-    protected $fillable = [
-    'sub_kegiatan_id','uraian','anggaran','realisasi','kategori'
-    ];
+    protected $table = 'rincian_kegiatans';
 
+    protected $fillable = [
+        'sub_kegiatan_id',
+        'uraian',
+        'kategori',
+        'anggaran',
+        'realisasi',
+        'target_fisik',
+    ];
 
     protected $casts = [
         'anggaran' => 'decimal:2',
         'realisasi' => 'decimal:2',
+        'target_fisik' => 'decimal:2',
     ];
 
-    /** =======================
-     * Relations
-     * ======================= */
+    /* ==========================
+     | 🔗 RELATIONSHIPS
+     ========================== */
+
     public function subKegiatan()
     {
         return $this->belongsTo(SubKegiatan::class);
@@ -30,13 +37,13 @@ class RincianKegiatan extends Model
 
     public function realisasiRincians()
     {
-        return $this->hasMany(\App\Models\RealisasiRincian::class, 'rincian_kegiatan_id');
+        return $this->hasMany(RealisasiRincian::class, 'rincian_kegiatan_id');
     }
 
+    /* ==========================
+     | 📊 ACCESSORS & HELPERS
+     ========================== */
 
-    /** =======================
-     * Accessors helper (numerik)
-     * ======================= */
     public function getAnggaranNumAttribute(): float
     {
         return (float) ($this->anggaran ?? 0);
@@ -47,8 +54,28 @@ class RincianKegiatan extends Model
         return (float) ($this->realisasi ?? 0);
     }
 
+    public function getTargetFisikNumAttribute(): float
+    {
+        return (float) ($this->target_fisik ?? 0);
+    }
+
     public function getSisaAttribute(): float
     {
         return max(0, $this->anggaran_num - $this->realisasi_num);
+    }
+
+    public function getPersentaseRealisasiAttribute(): float
+    {
+        $anggaran = $this->anggaran_num;
+        if ($anggaran <= 0) return 0;
+        return round(($this->realisasi_num / $anggaran) * 100, 2);
+    }
+
+    public function getProgressFisikAttribute(): float
+    {
+        // Jika target_fisik = 0, maka progress juga 0
+        return $this->target_fisik_num > 0
+            ? round(min(100, $this->target_fisik_num), 2)
+            : 0;
     }
 }

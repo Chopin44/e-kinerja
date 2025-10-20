@@ -21,7 +21,6 @@
                 <thead class="bg-gray-50 text-gray-600 uppercase">
                     <tr>
                         <th class="px-4 py-2 text-left">Nama</th>
-                        <th class="px-4 py-2 text-left">Email</th>
                         <th class="px-4 py-2 text-left">Bidang</th>
                         <th class="px-4 py-2 text-left">Role</th>
                         <th class="px-4 py-2 text-center">Status</th>
@@ -32,9 +31,22 @@
                     @foreach($users as $user)
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 font-medium">{{ $user->name }}</td>
-                        <td class="px-4 py-2">{{ $user->email }}</td>
-                        <td class="px-4 py-2">{{ $user->bidang->nama ?? '-' }}</td>
-                        <td class="px-4 py-2 capitalize">{{ $user->role }}</td>
+                        <td class="px-4 py-2">
+                            @php
+                            $role = $user->getRoleNames()->first();
+                            @endphp
+
+                            @if($role === 'admin')
+                            &mdash;
+                            @else
+                            {{ $user->bidang->nama ?? '-' }}
+                            @endif
+                        </td>
+
+                        <td class="px-4 py-2 capitalize">
+                            {{ $user->getRoleNames()->implode(', ') ?? '-' }}
+                        </td>
+
                         <td class="px-4 py-2 text-center">
                             <form method="POST" action="{{ route('users.toggle', $user) }}">
                                 @csrf

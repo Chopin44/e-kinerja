@@ -1,7 +1,4 @@
-<!-- resources/views/kegiatan/create.blade.php -->
 <x-app-layout>
-
-
     <div class="max-w-5xl mx-auto space-y-6 px-4" x-data="{ mode: '{{ old('mode','baru') }}' }">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
@@ -52,7 +49,7 @@
                     </div>
                 </div>
 
-                {{-- ================== FORM KEGIATAN (HANYA JIKA mode=baru) ================== --}}
+                {{-- FORM KEGIATAN (mode baru) --}}
                 <div x-show="mode==='baru'">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-4">
                         <!-- Nama Kegiatan -->
@@ -62,7 +59,7 @@
                                 value="{{ old('nama') }}">
                         </div>
 
-                        {{-- === BIDANG (PJ Level Kegiatan) === --}}
+                        <!-- Bidang -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Bidang</label>
                             @if(Auth::user()->hasRole('admin'))
@@ -81,19 +78,14 @@
                             @endif
                         </div>
 
-
                         <!-- Periode -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Periode</label>
                             <select name="periode_type" class="form-select">
-                                <option value="triwulan 1" {{ old('periode_type')=='triwulan 1' ? 'selected' : '' }}>
-                                    Triwulan 1</option>
-                                <option value="triwulan 2" {{ old('periode_type')=='triwulan 2' ? 'selected' : '' }}>
-                                    Triwulan 2</option>
-                                <option value="triwulan 3" {{ old('periode_type')=='triwulan 3' ? 'selected' : '' }}>
-                                    Triwulan 3</option>
-                                <option value="triwulan 4" {{ old('periode_type')=='triwulan 4' ? 'selected' : '' }}>
-                                    Triwulan 4</option>
+                                @foreach(['triwulan 1','triwulan 2','triwulan 3','triwulan 4'] as $q)
+                                <option value="{{ $q }}" {{ old('periode_type')==$q ? 'selected' :'' }}>{{ ucfirst($q)
+                                    }}</option>
+                                @endforeach
                             </select>
                         </div>
 
@@ -102,12 +94,20 @@
                             <label class="block text-sm font-medium text-gray-700">Tahun</label>
                             <select name="tahun" class="form-select">
                                 @for($year = date('Y'); $year <= date('Y') + 5; $year++) <option value="{{ $year }}" {{
-                                    old('tahun', date('Y'))==$year ? 'selected' : '' }}>
+                                    old('tahun', date('Y'))==$year ? 'selected' :'' }}>
                                     {{ $year }}
                                     </option>
                                     @endfor
                             </select>
                         </div>
+
+                        <!-- Target Fisik Kegiatan -->
+                        {{-- <div>
+                            <label class="block text-sm font-medium text-gray-700">Target Fisik (%)</label>
+                            <input type="number" name="target_fisik" value="0" readonly
+                                class="form-input bg-gray-100 text-gray-500 cursor-not-allowed">
+                            <p class="text-xs text-gray-500 mt-1">Target fisik kegiatan diset 0% secara default.</p>
+                        </div> --}}
 
                         <!-- Tanggal Mulai -->
                         <div>
@@ -132,11 +132,9 @@
                     </div>
                 </div>
 
-                {{-- ================== SUBKEGIATAN & RINCIAN (UNTUK DUA MODE) ================== --}}
-                <div x-data="subForm({
-                    tahunDefault: {{ old('tahun', date('Y')) }},
-                    periodeDefault: '{{ old('periode_type', 'triwulan 1') }}',
-                })">
+                {{-- SUBKEGIATAN --}}
+                <div
+                    x-data="subForm({ tahunDefault: {{ old('tahun', date('Y')) }}, periodeDefault: '{{ old('periode_type', 'triwulan 1') }}' })">
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="text-lg font-semibold text-gray-800">Subkegiatan</h2>
                         <button type="button" @click="addSub()" class="btn-secondary">
@@ -154,9 +152,7 @@
                                 <div class="flex items-start justify-between">
                                     <h3 class="font-medium text-gray-800">Subkegiatan <span x-text="si+1"></span></h3>
                                     <button type="button" @click="removeSub(si)"
-                                        class="text-red-600 text-sm hover:underline">
-                                        Hapus
-                                    </button>
+                                        class="text-red-600 text-sm hover:underline">Hapus</button>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
@@ -166,18 +162,15 @@
                                             x-model="sub.nama">
                                     </div>
 
-                                    {{-- === STAF ADMIN (PJ Subkegiatan) === --}}
                                     <div class="lg:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700">Staf Admin</label>
-
                                         @if(Auth::user()->hasRole('admin'))
                                         <select class="form-select" :name="`subkegiatans[${si}][user_id]`"
                                             x-model="sub.user_id">
                                             <option value="">Pilih Staf Admin</option>
                                             @foreach($users as $u)
-                                            <option value="{{ $u->id }}">
-                                                {{ $u->name }} {{ $u->bidang? ' - '.$u->bidang->nama : '' }}
-                                            </option>
+                                            <option value="{{ $u->id }}">{{ $u->name }} {{ $u->bidang? ' -
+                                                '.$u->bidang->nama : '' }}</option>
                                             @endforeach
                                         </select>
                                         @else
@@ -194,6 +187,13 @@
                                         <input type="number" min="0" class="form-input"
                                             :name="`subkegiatans[${si}][target_anggaran]`"
                                             x-model="sub.target_anggaran">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Target Fisik (%)</label>
+                                        <input type="number" min="0" max="100" class="form-input"
+                                            :name="`subkegiatans[${si}][target_fisik]`" x-model="sub.target_fisik"
+                                            placeholder="Misal: 100">
                                     </div>
 
                                     <div>
@@ -221,7 +221,7 @@
                                     </div>
                                 </div>
 
-                                {{-- ================== RINCIAN ================== --}}
+                                {{-- RINCIAN --}}
                                 <div class="mt-4">
                                     <div class="flex items-center justify-between mb-2">
                                         <h4 class="font-medium text-gray-700">Rincian Kegiatan</h4>
@@ -236,7 +236,7 @@
 
                                     <div class="space-y-3">
                                         <template x-for="(r, ri) in sub.rincian" :key="ri">
-                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3 items-end">
                                                 <div class="lg:col-span-2">
                                                     <label class="block text-xs text-gray-600">Uraian</label>
                                                     <input type="text" class="form-input"
@@ -264,12 +264,11 @@
                                                 </div>
 
                                                 <div>
-                                                    <label class="block text-xs text-gray-600">Satuan</label>
-                                                    <input type="text" class="form-input"
-                                                        :name="`subkegiatans[${si}][rincian][${ri}][satuan]`"
-                                                        x-model="r.satuan" placeholder="paket/unit/meter">
+                                                    <label class="block text-xs text-gray-600">Target Fisik (%)</label>
+                                                    <input type="number" min="0" max="100" class="form-input"
+                                                        :name="`subkegiatans[${si}][rincian][${ri}][target_fisik]`"
+                                                        x-model="r.target_fisik" placeholder="Misal: 100">
                                                 </div>
-
 
                                                 <div class="text-right">
                                                     <button type="button" @click="removeRincian(si, ri)"
@@ -288,36 +287,36 @@
                     {{-- INIT SCRIPT --}}
                     <script>
                         function subForm({tahunDefault, periodeDefault}) {
-            return {
-                subs: [],
-                addSub() {
-                    this.subs.push({
-                        nama: '',
-                        user_id: '{{ Auth::user()->hasRole('admin') ? '' : Auth::id() }}', // default utk non-admin
-                        target_anggaran: '',
-                        periode_type: '', // kosong = ikut kegiatan
-                        tahun: tahunDefault,
-                        deskripsi: '',
-                        rincian: []
-                    });
-                },
-                removeSub(i){ this.subs.splice(i, 1); },
-                addRincian(i){
-                    this.subs[i].rincian.push({
-                        uraian: '',
-                        kategori: '',
-                        anggaran: '',
-                        satuan: ''
-                    });
-                },
-                removeRincian(i, j){
-                    this.subs[i].rincian.splice(j, 1);
-                }
-            }
-        }
+                            return {
+                                subs: [],
+                                addSub() {
+                                    this.subs.push({
+                                        nama: '',
+                                        user_id: '{{ Auth::user()->hasRole('admin') ? '' : Auth::id() }}',
+                                        target_anggaran: '',
+                                        target_fisik: '',
+                                        periode_type: '',
+                                        tahun: tahunDefault,
+                                        deskripsi: '',
+                                        rincian: []
+                                    });
+                                },
+                                removeSub(i){ this.subs.splice(i, 1); },
+                                addRincian(i){
+                                    this.subs[i].rincian.push({
+                                        uraian: '',
+                                        kategori: '',
+                                        anggaran: '',
+                                        target_fisik: '',
+                                    });
+                                },
+                                removeRincian(i, j){
+                                    this.subs[i].rincian.splice(j, 1);
+                                }
+                            }
+                        }
                     </script>
                 </div>
-
 
                 <!-- Tombol -->
                 <div class="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-4">
@@ -331,7 +330,4 @@
             </form>
         </div>
     </div>
-
-    {{-- AlpineJS (kalau belum dimuat di layout utama) --}}
-    {{-- <script src="https://unpkg.com/alpinejs" defer></script> --}}
 </x-app-layout>

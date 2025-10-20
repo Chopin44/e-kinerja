@@ -11,7 +11,6 @@ class RincianKegiatanController extends Controller
 {
     /**
      * INDEX (NESTED): /subkegiatan/{subkegiatan}/rincian
-     * Daftar rincian untuk 1 subkegiatan.
      */
     public function index(SubKegiatan $subkegiatan)
     {
@@ -46,12 +45,14 @@ class RincianKegiatanController extends Controller
         $this->authorizeManage($subkegiatan);
 
         $data = $request->validate([
-            'uraian'   => ['required','string','max:255'],
-            'kategori' => ['nullable','in:pengadaan_langsung,swakelola,pokir'],
-            'anggaran' => ['nullable','numeric','min:0'],
+            'uraian'        => ['required', 'string', 'max:255'],
+            'kategori'      => ['nullable', 'in:pengadaan_langsung,swakelola,pokir'],
+            'anggaran'      => ['nullable', 'numeric', 'min:0'],
+            'target_fisik'  => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $data['sub_kegiatan_id'] = $subkegiatan->id;
+        $data['target_fisik'] = $data['target_fisik'] ?? 0;
 
         RincianKegiatan::create($data);
 
@@ -62,7 +63,6 @@ class RincianKegiatanController extends Controller
 
     /**
      * EDIT (SHALLOW): /rincian/{rincian}/edit
-     * Tidak butuh parameter subkegiatan di URL.
      */
     public function edit(RincianKegiatan $rincian)
     {
@@ -85,10 +85,13 @@ class RincianKegiatanController extends Controller
         $this->authorizeManage($subkegiatan);
 
         $data = $request->validate([
-            'uraian'   => ['required','string','max:255'],
-            'kategori' => ['nullable','in:pengadaan_langsung,swakelola,pokir'],
-            'anggaran' => ['nullable','numeric','min:0'],
+            'uraian'        => ['required', 'string', 'max:255'],
+            'kategori'      => ['nullable', 'in:pengadaan_langsung,swakelola,pokir'],
+            'anggaran'      => ['nullable', 'numeric', 'min:0'],
+            'target_fisik'  => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
+
+        $data['target_fisik'] = $data['target_fisik'] ?? 0;
 
         $rincian->update($data);
 
@@ -114,14 +117,15 @@ class RincianKegiatanController extends Controller
             ->with('success', 'Rincian berhasil dihapus.');
     }
 
-    /**
-     * Lihat daftar rincian (siapa pun di bidang yg sama, atau admin/kabid/pimpinan).
-     */
+    /* =====================================================
+     * AUTHORIZATION (Role: admin, kabid, atau bidang sama)
+     * ===================================================== */
+
     private function authorizeIndex(SubKegiatan $sub): void
     {
         $user = Auth::user();
 
-        if ($user->hasAnyRole(['admin','kabid','pimpinan'])) {
+        if ($user->hasAnyRole(['admin', 'kabid'])) {
             return;
         }
 
@@ -132,15 +136,11 @@ class RincianKegiatanController extends Controller
         abort(403, 'Anda tidak berwenang melihat rincian subkegiatan ini.');
     }
 
-    /**
-     * Kelola rincian (create/update/delete) — kebijakan Opsi B:
-     * siapa pun di bidang yg sama (atau admin/kabid/pimpinan) boleh kelola.
-     */
     private function authorizeManage(SubKegiatan $sub): void
     {
         $user = Auth::user();
 
-        if ($user->hasAnyRole(['admin','kabid','pimpinan'])) {
+        if ($user->hasAnyRole(['admin', 'kabid'])) {
             return;
         }
 

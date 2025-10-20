@@ -18,6 +18,7 @@ class SubKegiatan extends Model
         'nama',
         'deskripsi',
         'target_anggaran',
+        'target_fisik',
         'realisasi_anggaran',
         'periode_type',
         'tahun',

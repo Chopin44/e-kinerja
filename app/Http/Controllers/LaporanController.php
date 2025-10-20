@@ -239,115 +239,120 @@ class LaporanController extends Controller
      * Deviasi di SEMUA level dalam PERSEN:
      *   deviasi_pct = (realisasi - pagu) / pagu * 100 (jika pagu > 0)
      */
-    private function buildHierarchyForPeriod($kegiatans, Carbon $startDate, Carbon $endDate)
-    {
-        // Kumpulkan semua rincian_kegiatan_id
-        $allRincianIds = [];
-        foreach ($kegiatans as $k) {
-            foreach ($k->subKegiatans as $s) {
-                foreach ($s->rincianKegiatans as $r) {
-                    $allRincianIds[] = $r->id;
-                }
+private function buildHierarchyForPeriod($kegiatans, Carbon $startDate, Carbon $endDate)
+{
+    $allRincianIds = [];
+    foreach ($kegiatans as $k) {
+        foreach ($k->subKegiatans as $s) {
+            foreach ($s->rincianKegiatans as $r) {
+                $allRincianIds[] = $r->id;
             }
         }
-        $allRincianIds = array_values(array_unique($allRincianIds));
+    }
+    $allRincianIds = array_values(array_unique($allRincianIds));
 
-        // Realisasi detail dalam periode
-        $rr = collect();
-        if (!empty($allRincianIds)) {
-            $rr = RealisasiRincian::select(
-                    'rincian_kegiatan_id',
-                    \DB::raw('SUM(COALESCE(realisasi_anggaran,0)) as total_anggaran'),
-                    \DB::raw('AVG(COALESCE(realisasi_fisik,0)) as avg_fisik')
-                )
-                ->whereIn('rincian_kegiatan_id', $allRincianIds)
-                ->whereDate('tanggal_realisasi', '>=', $startDate->toDateString())
-                ->whereDate('tanggal_realisasi', '<=', $endDate->toDateString())
-                ->groupBy('rincian_kegiatan_id')
-                ->get()
-                ->keyBy('rincian_kegiatan_id');
+    $rr = collect();
+    if (!empty($allRincianIds)) {
+        $rr = RealisasiRincian::select(
+                'rincian_kegiatan_id',
+                \DB::raw('SUM(COALESCE(realisasi_anggaran,0)) as total_anggaran'),
+                \DB::raw('AVG(COALESCE(realisasi_fisik,0)) as avg_fisik')
+            )
+            ->whereIn('rincian_kegiatan_id', $allRincianIds)
+            ->whereBetween('tanggal_realisasi', [$startDate->toDateString(), $endDate->toDateString()])
+            ->groupBy('rincian_kegiatan_id')
+            ->get()
+            ->keyBy('rincian_kegiatan_id');
+    }
+
+    $num = fn($v) => (float) ($v ?? 0);
+    $kOut = [];
+
+    foreach ($kegiatans as $k) {
+        $paguK = 0;
+        foreach ($k->subKegiatans as $s) {
+            $paguK += $num($s->target_anggaran);
         }
+        if (!$paguK) $paguK = $num($k->target_anggaran);
 
-        $num = fn($v) => (float) ($v ?? 0);
+        $subOut = [];
+        $realisasiK = 0;
+        $fisikValsK = [];
 
-        $kOut = [];
-        foreach ($kegiatans as $k) {
-            // pagu kegiatan = sum pagu sub; fallback ke target_anggaran kegiatan
-            $paguK = 0;
-            foreach ($k->subKegiatans as $s) {
-                $paguK += $num($s->target_anggaran);
-            }
-            if (!$paguK) {
-                $paguK = $num($k->target_anggaran);
-            }
+        foreach ($k->subKegiatans as $s) {
+            $paguS = $num($s->target_anggaran);
+            $rinciOut = [];
+            $realS = 0;
+            $fisikValsS = [];
 
-            $subOut     = [];
-            $realisasiK = 0;
+            foreach ($s->rincianKegiatans as $r) {
+                $angR   = $num($r->anggaran);
+                $row    = $rr->get($r->id);
+                $realR  = $row ? $num($row->total_anggaran) : 0.0;
+                $fisikR = $row ? (float) $row->avg_fisik : null;
 
-            foreach ($k->subKegiatans as $s) {
-                $paguS    = $num($s->target_anggaran);
-                $rinciOut = [];
-                $realS    = 0;
+                $sisaR       = max($angR - $realR, 0);
+                $deviasiPctR = $angR > 0 ? (($realR - $angR) / $angR) * 100 : null;
 
-                foreach ($s->rincianKegiatans as $r) {
-                    $angR   = $num($r->anggaran);
-                    $row    = $rr->get($r->id);
-                    $realR  = $row ? $num($row->total_anggaran) : 0.0;
-                    $fisikR = $row ? (float) $row->avg_fisik : null;
-
-                    $sisaR       = max($angR - $realR, 0);
-                    $deviasiPctR = $angR > 0 ? (($realR - $angR) / $angR) * 100 : null;
-
-                    $rinciOut[] = [
-                        'id'          => $r->id,
-                        'uraian'      => $r->uraian,
-                        'anggaran'    => $angR,
-                        'realisasi'   => $realR,
-                        'sisa'        => $sisaR,
-                        'deviasi_pct' => is_null($deviasiPctR) ? null : round($deviasiPctR, 1),
-                        'fisik'       => $fisikR,
-                    ];
-
-                    $realS += $realR;
-                }
-
-                $sisaS       = max($paguS - $realS, 0);
-                $progressS   = $paguS > 0 ? ($realS / $paguS) * 100 : 0;
-                $deviasiPctS = $paguS > 0 ? (($realS - $paguS) / $paguS) * 100 : null;
-
-                $subOut[] = [
-                    'id'           => $s->id,
-                    'nama'         => $s->nama,
-                    'pagu'         => $paguS,
-                    'realisasi'    => $realS,
-                    'sisa'         => $sisaS,
-                    'progress'     => round($progressS, 1),
-                    'deviasi_pct'  => is_null($deviasiPctS) ? null : round($deviasiPctS, 1),
-                    'rincians'     => $rinciOut,
+                $rinciOut[] = [
+                    'id'          => $r->id,
+                    'uraian'      => $r->uraian,
+                    'anggaran'    => $angR,
+                    'realisasi'   => $realR,
+                    'sisa'        => $sisaR,
+                    'deviasi_pct' => is_null($deviasiPctR) ? null : round($deviasiPctR, 1),
+                    'fisik'       => $fisikR,
                 ];
 
-                $realisasiK += $realS;
+                $realS += $realR;
+                if (!is_null($fisikR)) $fisikValsS[] = $fisikR;
             }
 
-            $sisaK       = max($paguK - $realisasiK, 0);
-            $progressK   = $paguK > 0 ? ($realisasiK / $paguK) * 100 : 0;
-            $deviasiPctK = $paguK > 0 ? (($realisasiK - $paguK) / $paguK) * 100 : null;
+            $avgFisikS = count($fisikValsS) ? array_sum($fisikValsS) / count($fisikValsS) : 0;
+            $sisaS       = max($paguS - $realS, 0);
+            $progressS   = $paguS > 0 ? ($realS / $paguS) * 100 : 0;
+            $deviasiPctS = $paguS > 0 ? (($realS - $paguS) / $paguS) * 100 : null;
 
-            $kOut[] = [
-                'id'           => $k->id,
-                'bidang'       => $k->bidang->nama ?? '-',
-                'nama'         => $k->nama,
-                'pagu'         => $paguK,
-                'realisasi'    => $realisasiK,
-                'sisa'         => $sisaK,
-                'progress'     => round($progressK, 1),
-                'deviasi_pct'  => is_null($deviasiPctK) ? null : round($deviasiPctK, 1),
-                'subkegiatans' => $subOut,
+            $subOut[] = [
+                'id'              => $s->id,
+                'nama'            => $s->nama,
+                'pagu'            => $paguS,
+                'realisasi'       => $realS,
+                'sisa'            => $sisaS,
+                'progress'        => round($progressS, 1),
+                'deviasi_pct'     => is_null($deviasiPctS) ? null : round($deviasiPctS, 1),
+                'target_fisik'    => 100, // misal target 100% default
+                'realisasi_fisik' => round($avgFisikS, 1),
+                'rincians'        => $rinciOut,
             ];
+
+            $realisasiK += $realS;
+            if ($avgFisikS > 0) $fisikValsK[] = $avgFisikS;
         }
 
-        return $kOut;
+        $avgFisikK = count($fisikValsK) ? array_sum($fisikValsK) / count($fisikValsK) : 0;
+        $sisaK       = max($paguK - $realisasiK, 0);
+        $progressK   = $paguK > 0 ? ($realisasiK / $paguK) * 100 : 0;
+        $deviasiPctK = $paguK > 0 ? (($realisasiK - $paguK) / $paguK) * 100 : null;
+
+        $kOut[] = [
+            'id'              => $k->id,
+            'bidang'          => $k->bidang->nama ?? '-',
+            'nama'            => $k->nama,
+            'pagu'            => $paguK,
+            'realisasi'       => $realisasiK,
+            'sisa'            => $sisaK,
+            'progress'        => round($progressK, 1),
+            'deviasi_pct'     => is_null($deviasiPctK) ? null : round($deviasiPctK, 1),
+            'target_fisik'    => 100, // default 100%
+            'realisasi_fisik' => round($avgFisikK, 1),
+            'subkegiatans'    => $subOut,
+        ];
     }
+
+    return $kOut;
+}
+
 
     /** Ringkasan agregat dari rows */
     private function buildSummary(array $rows): array

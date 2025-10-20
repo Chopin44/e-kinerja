@@ -31,11 +31,11 @@
                         <label class="block text-sm font-medium text-gray-700">Kategori</label>
                         <select name="kategori" class="w-full mt-1 border-gray-300 rounded-md text-sm">
                             <option value="">- pilih -</option>
-                            <option value="pengadaan_langsung" {{ old('kategori')=='pengadaan_langsung' ?'selected':''
-                                }}>Pengadaan Langsung</option>
-                            <option value="swakelola" {{ old('kategori')=='swakelola' ?'selected':'' }}>Swakelola
+                            <option value="pengadaan_langsung" {{ old('kategori')=='pengadaan_langsung' ? 'selected'
+                                : '' }}>Pengadaan Langsung</option>
+                            <option value="swakelola" {{ old('kategori')=='swakelola' ? 'selected' : '' }}>Swakelola
                             </option>
-                            <option value="pokir" {{ old('kategori')=='pokir' ?'selected':'' }}>Pokir</option>
+                            <option value="pokir" {{ old('kategori')=='pokir' ? 'selected' : '' }}>Pokir</option>
                         </select>
                         @error('kategori') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -48,13 +48,11 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700">Satuan</label>
-                        <input type="text" name="satuan" value="{{ old('satuan') }}"
-                            class="w-full mt-1 border-gray-300 rounded-md text-sm">
-                        @error('satuan') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                        <label class="block text-sm font-medium text-gray-700">Target Fisik (%)</label>
+                        <input type="number" name="target_fisik" min="0" max="100" step="0.1"
+                            value="{{ old('target_fisik', 0) }}" class="w-full mt-1 border-gray-300 rounded-md text-sm">
+                        @error('target_fisik') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
-
-
                 </div>
 
                 <div class="flex justify-end gap-2">

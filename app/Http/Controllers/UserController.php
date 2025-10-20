@@ -11,42 +11,54 @@ use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
+    /**
+     * Tampilkan daftar user.
+     */
     public function index()
     {
-        // Tampilkan beserta roles (dari Spatie)
         $users = User::with(['bidang', 'roles'])->paginate(10);
         return view('users.index', compact('users'));
     }
 
+    /**
+     * Form tambah user baru.
+     */
     public function create()
     {
         $bidangs = Bidang::active()->get();
-        // Daftar role dari Spatie
-        $roles = Role::pluck('name'); // ['admin','kabid','staf', ...]
+        $roles = Role::pluck('name'); // contoh: ['admin','kabid','staf']
         return view('users.create', compact('bidangs', 'roles'));
     }
 
+    /**
+     * Simpan user baru.
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'name'                  => 'required|string|max:255',
-            'nip'                   => 'nullable|string|max:50',
-            'username'              => 'required|string|unique:users,username',
-            'bidang_id'             => 'nullable|exists:bidangs,id',
-            'role'                  => 'required|in:admin,staf,kabid',
-            'password'              => 'required|min:6|confirmed',
+            'name'       => 'required|string|max:255',
+            'nip'        => 'nullable|string|max:50',
+            'username'   => 'required|string|unique:users,username',
+            'bidang_id'  => 'nullable|exists:bidangs,id',
+            'role'       => 'required|in:admin,staf,kabid',
+            'password'   => 'required|min:6|confirmed',
         ]);
+
+        // Jika role admin atau kabid, kosongkan bidang_id
+        $bidangId = in_array($request->role, ['admin'])
+            ? null
+            : $request->bidang_id;
 
         $user = User::create([
             'name'       => $request->name,
             'nip'        => $request->nip,
             'username'   => $request->username,
-            'bidang_id'  => $request->bidang_id,
+            'bidang_id'  => $bidangId,
             'password'   => Hash::make($request->password),
             'is_active'  => true,
         ]);
 
-        // Tambahkan role via Spatie
+        // Tambahkan role ke user (Spatie)
         $user->assignRole($request->role);
 
         return redirect()
@@ -54,6 +66,9 @@ class UserController extends Controller
             ->with('success', 'User berhasil ditambahkan!');
     }
 
+    /**
+     * Form edit user.
+     */
     public function edit(User $user)
     {
         $bidangs = Bidang::active()->get();
@@ -61,26 +76,37 @@ class UserController extends Controller
         return view('users.edit', compact('user', 'bidangs', 'roles'));
     }
 
+    /**
+     * Update data user.
+     */
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name'                  => 'required|string|max:255',
-            'nip'                   => 'nullable|string|max:50',
-            'username'              => "required|unique:users,username,{$user->id}",
-            'bidang_id'             => 'nullable|exists:bidangs,id',
-            'role'                  => 'required|in:admin,staf,kabid',
-            'password'              => 'nullable|min:6|confirmed',
+            'name'       => 'required|string|max:255',
+            'nip'        => 'nullable|string|max:50',
+            'username'   => "required|unique:users,username,{$user->id}",
+            'bidang_id'  => 'nullable|exists:bidangs,id',
+            'role'       => 'required|in:admin,staf,kabid',
+            'password'   => 'nullable|min:6|confirmed',
         ]);
 
-        $data = $request->only(['name', 'nip', 'username', 'bidang_id']);
+        $data = $request->only(['name', 'nip', 'username']);
 
+        // Jika admin atau kabid, kosongkan bidang_id
+        if (in_array($request->role, ['admin'])) {
+            $data['bidang_id'] = null;
+        } else {
+            $data['bidang_id'] = $request->bidang_id;
+        }
+
+        // Jika password diisi, enkripsi dan update
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
 
         $user->update($data);
 
-        // Sinkronisasi role Spatie (hapus role lama, pasang baru)
+        // Sinkronisasi role Spatie (hapus lama, pasang baru)
         $user->syncRoles([$request->role]);
 
         return redirect()
@@ -88,9 +114,12 @@ class UserController extends Controller
             ->with('success', 'User berhasil diperbarui!');
     }
 
+    /**
+     * Hapus user dan semua data terkait.
+     */
     public function destroy(User $user)
     {
-        // (Opsional) cegah user menghapus dirinya sendiri
+        // Opsional: cegah user menghapus dirinya sendiri
         if (auth()->id() === $user->id) {
             return back()->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
         }
@@ -98,7 +127,7 @@ class UserController extends Controller
         DB::transaction(function () use ($user) {
             // Hapus semua kegiatan milik user, termasuk evaluasi & realisasi
             foreach ($user->kegiatans as $kegiatan) {
-                // Hapus evaluasi terkait (sesuaikan relasi/method jika berbeda)
+                // Hapus evaluasi terkait
                 $kegiatan->evaluasis()->delete();
 
                 // Hapus realisasi & dokumen
@@ -107,14 +136,14 @@ class UserController extends Controller
                 }
                 $kegiatan->realisasis()->delete();
 
-                // Hapus kegiatannya
+                // Hapus kegiatan
                 $kegiatan->delete();
             }
 
             // Lepas semua role
             $user->syncRoles([]);
 
-            // Terakhir, hapus user
+            // Hapus user
             $user->delete();
         });
 
@@ -123,6 +152,9 @@ class UserController extends Controller
             ->with('success', 'Pengguna dan seluruh data terkait berhasil dihapus.');
     }
 
+    /**
+     * Aktif/nonaktifkan user.
+     */
     public function toggleActive(User $user)
     {
         $user->update(['is_active' => !$user->is_active]);

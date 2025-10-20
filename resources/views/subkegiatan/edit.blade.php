@@ -1,5 +1,6 @@
 <x-app-layout>
     <div class="max-w-4xl mx-auto space-y-6 px-4">
+        <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <div class="flex items-center justify-between">
                 <div>
@@ -12,13 +13,14 @@
             </div>
         </div>
 
+        <!-- Form -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
             <form action="{{ route('subkegiatan.update', $subkegiatan) }}" method="POST" class="space-y-5">
                 @csrf
                 @method('PUT')
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {{-- Kegiatan (bisa pindah sub ke kegiatan lain) --}}
+                    {{-- Kegiatan --}}
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-gray-700">Kegiatan</label>
                         <select name="kegiatan_id" class="w-full mt-1 border-gray-300 rounded-md text-sm" required>
@@ -32,7 +34,7 @@
                         @error('kegiatan_id') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- Staf Admin (penanggung jawab sub) --}}
+                    {{-- Staf Admin --}}
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-gray-700">Staf Admin</label>
                         <select name="user_id" class="w-full mt-1 border-gray-300 rounded-md text-sm">
@@ -46,7 +48,7 @@
                         @error('user_id') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
-                    {{-- Nama --}}
+                    {{-- Nama Subkegiatan --}}
                     <div class="sm:col-span-2">
                         <label class="block text-sm font-medium text-gray-700">Nama Subkegiatan</label>
                         <input type="text" name="nama" value="{{ old('nama', $subkegiatan->nama) }}"
@@ -61,6 +63,15 @@
                             value="{{ old('target_anggaran', $subkegiatan->target_anggaran) }}"
                             class="w-full mt-1 border-gray-300 rounded-md text-sm" required>
                         @error('target_anggaran') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    {{-- Target Fisik --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Target Fisik (%)</label>
+                        <input type="number" min="0" max="100" step="0.1" name="target_fisik"
+                            value="{{ old('target_fisik', $subkegiatan->target_fisik ?? 0) }}"
+                            class="w-full mt-1 border-gray-300 rounded-md text-sm" placeholder="Misal: 75.5">
+                        @error('target_fisik') <p class="text-red-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     {{-- Periode --}}
@@ -95,6 +106,7 @@
                     </div>
                 </div>
 
+                <!-- Tombol Aksi -->
                 <div class="flex justify-between items-center">
                     <a href="{{ route('subkegiatan.rincian.index', $subkegiatan) }}"
                         class="text-blue-600 text-sm hover:underline">

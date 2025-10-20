@@ -137,15 +137,17 @@
                                 {{ $realisasi->tanggal_realisasi->format('d/m/Y') }}
                             </td>
 
+
                             <td class="px-6 py-4">
-                                <div class="text-sm font-medium">{{ number_format($realisasi->realisasi_fisik, 0) }}%
-                                </div>
-                                <div class="progress-bar mt-1">
-                                    <div class="progress-fill" style="width: {{ (float)$realisasi->realisasi_fisik }}%">
+                                @php
+                                $fisik = (float) ($realisasi->realisasi_fisik ?? 0);
+                                @endphp
+                                <div class="text-sm font-medium">{{ number_format($fisik, 2) }}%</div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: {{ min($fisik, 100) }}%">
                                     </div>
                                 </div>
                             </td>
-
                             <td class="px-6 py-4 text-sm">
                                 <div class="font-medium text-gray-900">
                                     Rp {{ number_format($realisasi->realisasi_anggaran, 0, ',', '.') }}
