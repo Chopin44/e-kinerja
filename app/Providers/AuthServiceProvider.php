@@ -13,19 +13,19 @@ class AuthServiceProvider extends ServiceProvider
     /**
      * Daftarkan policy eksplisit (opsional, auto-discovery biasanya cukup).
      */
-    protected $policies = [
-        Kegiatan::class => KegiatanPolicy::class,
-    ];
+    // protected $policies = [
+    //     Kegiatan::class => KegiatanPolicy::class,
+    // ];
 
-    public function boot(): void
-    {
-        // Admin = superuser. Jika user punya role 'admin' (Spatie), lolos semua ability.
-        Gate::before(function ($user, string $ability) {
-            return method_exists($user, 'hasRole') && $user->hasRole('admin') ? true : null;
-        });
+    // public function boot(): void
+    // {
+    //     // Admin = superuser. Jika user punya role 'admin' (Spatie), lolos semua ability.
+    //     Gate::before(function ($user, string $ability) {
+    //         return method_exists($user, 'hasRole') && $user->hasRole('admin') ? true : null;
+    //     });
 
-        // Gates helper (opsional untuk @can('staf') / middleware can:staf)
-        Gate::define('staf', fn ($user) => method_exists($user, 'hasRole') && $user->hasRole('staf'));
-        Gate::define('pimpinan', fn ($user) => method_exists($user, 'hasRole') && $user->hasRole('pimpinan'));
-    }
+    //     // Gates helper (opsional untuk @can('staf') / middleware can:staf)
+    //     Gate::define('staf', fn ($user) => method_exists($user, 'hasRole') && $user->hasRole('staf'));
+    //     Gate::define('kabid', fn ($user) => method_exists($user, 'hasRole') && $user->hasRole('kabid'));
+    // }
 }

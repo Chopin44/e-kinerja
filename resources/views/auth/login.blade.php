@@ -17,7 +17,7 @@
             <x-application-logo class="w-20 h-20 sm:w-24 sm:h-24 text-blue-600" />
         </a>
         <h1 class="text-3xl sm:text-4xl font-extrabold text-blue-700 dark:text-white leading-tight">
-            Sistem Kinerja
+            Sistem Laporan Kinerja
         </h1>
         <p class="text-sm sm:text-base text-gray-600 dark:text-blue-100 font-medium leading-snug max-w-xs sm:max-w-md">
             Dinas Kepemudaan, Olahraga, dan Pariwisata<br>

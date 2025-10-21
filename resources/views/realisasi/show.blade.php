@@ -20,44 +20,30 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
                 <div>
                     <p class="text-gray-500">Kegiatan</p>
-                    <p class="font-medium text-gray-900">
-                        {{ $realisasi->kegiatan->nama ?? '-' }}
-                    </p>
+                    <p class="font-medium text-gray-900">{{ $realisasi->kegiatan->nama ?? '-' }}</p>
                 </div>
-
                 <div>
                     <p class="text-gray-500">Subkegiatan</p>
-                    <p class="font-medium text-gray-900">
-                        {{ $realisasi->subKegiatan->nama ?? '-' }}
-                    </p>
+                    <p class="font-medium text-gray-900">{{ $realisasi->subKegiatan->nama ?? '-' }}</p>
                 </div>
-
                 <div>
                     <p class="text-gray-500">Tanggal Realisasi</p>
                     <p class="font-medium text-gray-900">
                         {{ \Carbon\Carbon::parse($realisasi->tanggal_realisasi)->translatedFormat('d F Y') }}
                     </p>
                 </div>
-
                 <div>
                     <p class="text-gray-500">Realisasi Fisik</p>
-                    <p class="font-medium text-gray-900">
-                        {{ $realisasi->realisasi_fisik ? $realisasi->realisasi_fisik.'%' : '-' }}
-                    </p>
+                    <p class="font-medium text-gray-900">{{ $realisasi->realisasi_fisik ?
+                        $realisasi->realisasi_fisik.'%' : '-' }}</p>
                 </div>
-
                 <div>
                     <p class="text-gray-500">Lokasi</p>
-                    <p class="font-medium text-gray-900">
-                        {{ $realisasi->lokasi ?? '-' }}
-                    </p>
+                    <p class="font-medium text-gray-900">{{ $realisasi->lokasi ?? '-' }}</p>
                 </div>
-
                 <div>
                     <p class="text-gray-500">Catatan</p>
-                    <p class="font-medium text-gray-900 whitespace-pre-line">
-                        {{ $realisasi->catatan ?? '-' }}
-                    </p>
+                    <p class="font-medium text-gray-900 whitespace-pre-line">{{ $realisasi->catatan ?? '-' }}</p>
                 </div>
             </div>
         </div>
@@ -84,8 +70,7 @@
                             <td class="px-4 py-2 border">Rp {{ number_format($r->realisasi_anggaran, 0, ',', '.') }}
                             </td>
                             <td class="px-4 py-2 border">{{ $r->realisasi_fisik ?? '-' }}</td>
-                            <td class="px-4 py-2 border">
-                                {{ optional($r->tanggal_realisasi)->format('d/m/Y') ?? '-' }}
+                            <td class="px-4 py-2 border">{{ optional($r->tanggal_realisasi)->format('d/m/Y') ?? '-' }}
                             </td>
                         </tr>
                         @endforeach
@@ -108,37 +93,63 @@
 
         {{-- Dokumen --}}
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <h2 class="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">Dokumen Pendukung</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-gray-800">Dokumen Pendukung</h2>
+            </div>
+
+            {{-- Form Upload Dokumen --}}
+            <form action="{{ route('dokumen.store', $realisasi->id) }}" method="POST" enctype="multipart/form-data"
+                class="mb-5">
+                @csrf
+                <div class="flex items-center gap-3">
+                    <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png"
+                        class="border border-gray-300 rounded-md px-3 py-2 text-sm w-full focus:ring focus:ring-blue-200">
+                    <button type="submit"
+                        class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition">
+                        <i class="fas fa-upload mr-1"></i> Upload
+                    </button>
+                </div>
+                @error('file')
+                <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+                @enderror
+            </form>
 
             @if($realisasi->dokumens->count())
-            <p class="text-sm text-gray-600 mb-3">
-                Total Dokumen: <b>{{ $realisasi->dokumens->count() }}</b>
-            </p>
-
             <ul class="grid sm:grid-cols-2 gap-4">
                 @foreach($realisasi->dokumens as $doc)
                 <li class="border rounded-lg p-3 flex items-center gap-3 bg-gray-50 hover:bg-gray-100 transition">
-                    @if(Str::endsWith(strtolower($doc->path), ['jpg', 'jpeg', 'png']))
-                    {{-- Preview gambar --}}
-                    <img src="{{ asset('storage/'.$doc->path) }}" alt="Dokumen"
+                    @php
+                    $isImage = in_array(strtolower(pathinfo($doc->path, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png']);
+                    @endphp
+
+                    @if($isImage)
+                    <img src="{{ Storage::url($doc->path) }}" alt="Dokumen"
                         class="w-16 h-16 object-cover rounded-md border">
                     @else
-                    {{-- Ikon file --}}
                     <div class="w-16 h-16 flex items-center justify-center rounded-md bg-gray-200 text-gray-600">
                         <i class="fas fa-file text-2xl"></i>
                     </div>
                     @endif
 
                     <div class="flex-1">
-                        <a href="{{ asset('storage/'.$doc->path) }}" target="_blank"
+                        <a href="{{ Storage::url($doc->path) }}" target="_blank"
                             class="font-medium text-blue-600 hover:underline">
-                            {{ $doc->nama_file }}
+                            {{ $doc->nama_asli ?? $doc->nama_file }}
                         </a>
                         <p class="text-xs text-gray-500 mt-1">
-                            {{ strtoupper(pathinfo($doc->nama_file, PATHINFO_EXTENSION)) }} •
-                            {{ round($doc->ukuran / 1024, 1) }} KB
+                            {{ strtoupper(pathinfo($doc->nama_file, PATHINFO_EXTENSION)) }} • {{ $doc->size_human }}
                         </p>
                     </div>
+
+                    {{-- Tombol Hapus --}}
+                    <form action="{{ route('dokumen.destroy', $doc->id) }}" method="POST"
+                        onsubmit="return confirm('Hapus dokumen ini?')" class="ml-2">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </form>
                 </li>
                 @endforeach
             </ul>

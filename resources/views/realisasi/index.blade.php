@@ -184,8 +184,7 @@
                                         <i class="fas fa-eye mr-1"></i>
                                     </a>
 
-                                    {{-- @if($realisasi->status == 'draft|' && (Auth::id() === $realisasi->user_id ||
-                                    Auth::user()->hasRole('admin|kabid'))) --}}
+                                    @if(Auth::user()->hasRole('admin|kabid'))
                                     <a href="{{ route('realisasi.edit', $realisasi) }}"
                                         class="text-center btn-secondary ">
                                         <i class="fas fa-edit mr-1 text-center"></i>
@@ -199,7 +198,7 @@
                                             <i class="fas fa-trash mr-1 text-center"></i>
                                         </button>
                                     </form>
-                                    {{-- @endif --}}
+                                    @endif
                                 </div>
                             </td>
                         </tr>

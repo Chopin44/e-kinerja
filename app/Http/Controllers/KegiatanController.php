@@ -9,14 +9,11 @@ use App\Models\RincianKegiatan;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class KegiatanController extends Controller
 {
-    use AuthorizesRequests;
-
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -26,7 +23,7 @@ class KegiatanController extends Controller
         $query->when(
             $request->filled('tahun'),
             fn ($q) => $q->byTahun($request->tahun),
-            fn ($q) => $q->byTahun(\Carbon\Carbon::now()->year)
+            fn ($q) => $q->byTahun(Carbon::now()->year)
         );
 
         // Hitung total realisasi per sub
@@ -82,7 +79,7 @@ class KegiatanController extends Controller
         }
 
         $kegiatans = $query->orderBy('nama')->paginate(10);
-        $bidangs   = \App\Models\Bidang::active()->get();
+        $bidangs   = Bidang::active()->get();
 
         return view('kegiatan.index', compact('kegiatans', 'bidangs', 'realisasiPerSub'));
     }
@@ -128,7 +125,7 @@ class KegiatanController extends Controller
             'tanggal_mulai'   => ['required','date'],
             'tanggal_selesai' => ['required','date','after_or_equal:tanggal_mulai'],
             'tahun'           => ['required','integer','min:2020','max:2100'],
-            'target_fisik'    => ['nullable','numeric','min:0','max:100'], // default 0
+            'target_fisik'    => ['nullable','numeric','min:0','max:100'],
         ];
 
         $rulesKegiatanExisting = [
@@ -176,7 +173,7 @@ class KegiatanController extends Controller
                     'tanggal_mulai'    => $validated['tanggal_mulai'],
                     'tanggal_selesai'  => $validated['tanggal_selesai'],
                     'tahun'            => $validated['tahun'],
-                    'target_fisik'     => $validated['target_fisik'] ?? 0, // default 0
+                    'target_fisik'     => $validated['target_fisik'] ?? 0,
                     'status'           => 'aktif',
                 ]);
             }
@@ -200,7 +197,7 @@ class KegiatanController extends Controller
                         'uraian'          => $rinci['uraian'],
                         'kategori'        => $rinci['kategori'] ?? null,
                         'anggaran'        => $rinci['anggaran'] ?? null,
-                        'target_fisik'    => $rinci['target_fisik'] ?? 0, // baru
+                        'target_fisik'    => $rinci['target_fisik'] ?? 0,
                     ]);
                 }
             }
@@ -223,9 +220,13 @@ class KegiatanController extends Controller
 
     public function edit(Kegiatan $kegiatan)
     {
-        $this->authorize('update', $kegiatan);
-
         $auth = Auth::user();
+
+        // Manual authorization
+        if (!$auth->hasAnyRole(['admin', 'kabid']) && $auth->id !== $kegiatan->user_id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengedit kegiatan ini.');
+        }
+
         if ($auth->hasRole('admin')) {
             $bidangs = Bidang::active()->get();
             $users   = User::active()->with('bidang:id,nama')->get();
@@ -239,7 +240,12 @@ class KegiatanController extends Controller
 
     public function update(Request $request, Kegiatan $kegiatan)
     {
-        $this->authorize('update', $kegiatan);
+        $auth = Auth::user();
+
+        // Manual authorization
+        if (!$auth->hasAnyRole(['admin', 'kabid']) && $auth->id !== $kegiatan->user_id) {
+            abort(403, 'Anda tidak memiliki izin untuk mengupdate kegiatan ini.');
+        }
 
         $validated = $request->validate([
             'nama'            => ['required','string','max:255'],
@@ -253,32 +259,46 @@ class KegiatanController extends Controller
             'target_fisik'    => ['nullable','numeric','min:0','max:100'],
         ]);
 
-        $auth = Auth::user();
         if (!$auth->hasRole('admin')) {
             $validated['bidang_id'] = $auth->bidang_id ?? $kegiatan->bidang_id;
             $validated['user_id']   = $auth->id ?? $kegiatan->user_id;
         }
 
-        $kegiatan->update([
-            'nama'            => $validated['nama'],
-            'deskripsi'       => $validated['deskripsi'] ?? null,
-            'bidang_id'       => $validated['bidang_id'],
-            'periode_type'    => $validated['periode_type'],
-            'tanggal_mulai'   => $validated['tanggal_mulai'],
-            'tanggal_selesai' => $validated['tanggal_selesai'],
-            'tahun'           => $validated['tahun'],
-            'status'          => $validated['status'],
-            'target_fisik'    => $validated['target_fisik'] ?? $kegiatan->target_fisik,
-        ]);
+        $kegiatan->update($validated);
 
         return redirect()->route('kegiatan.index')->with('success', 'Kegiatan berhasil diperbarui!');
     }
 
-    public function destroy(Kegiatan $kegiatan)
+   public function destroy(Kegiatan $kegiatan)
     {
-        $this->authorize('delete', $kegiatan);
-        $kegiatan->delete();
+        $auth = Auth::user();
 
-        return redirect()->route('kegiatan.index')->with('success', 'Kegiatan berhasil dihapus!');
+        if (!$auth->hasAnyRole(['admin', 'kabid']) && $auth->id !== $kegiatan->user_id) {
+            abort(403, 'Anda tidak memiliki izin untuk menghapus kegiatan ini.');
+        }
+
+        DB::transaction(function () use ($kegiatan) {
+            foreach ($kegiatan->subKegiatans as $sub) {
+                foreach ($sub->rincianKegiatans as $rincian) {
+                    // Hapus realisasi rinciannya
+                    DB::table('realisasi_rincians')->where('rincian_kegiatan_id', $rincian->id)->delete();
+                }
+                // Hapus rincian
+                DB::table('rincian_kegiatans')->where('sub_kegiatan_id', $sub->id)->delete();
+            }
+
+            // Hapus subkegiatannya
+            DB::table('sub_kegiatans')->where('kegiatan_id', $kegiatan->id)->delete();
+
+            // Kalau ada evaluasi atau realisasi langsung di kegiatan:
+            DB::table('evaluasis')->where('kegiatan_id', $kegiatan->id)->delete();
+            DB::table('realisasis')->where('kegiatan_id', $kegiatan->id)->delete();
+
+            // Terakhir hapus kegiatan
+            $kegiatan->delete();
+        });
+
+        return redirect()->route('kegiatan.index')->with('success', 'Kegiatan dan semua data terkait berhasil dihapus!');
     }
+
 }

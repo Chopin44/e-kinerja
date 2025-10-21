@@ -17,6 +17,9 @@ use App\Http\Controllers\SubKegiatanController;
 use App\Http\Controllers\RincianKegiatanController;
 use App\Http\Controllers\RealisasiRincianController;
 
+// ✅ Tambahan baru: DokumenController
+use App\Http\Controllers\DokumenController;
+
 Route::get('/', fn () => redirect('/login'));
 
 Route::middleware(['auth'])->group(function () {
@@ -30,21 +33,13 @@ Route::middleware(['auth'])->group(function () {
 
     /*
     |--------------------------------------------------------------------------
-    | ADMIN AREA (Role: admin) - menggunakan Spatie middleware: role:admin
+    | ADMIN AREA (Role: admin)
     |--------------------------------------------------------------------------
-    | Semua route di dalam group ini hanya bisa diakses user dengan role "admin".
-    | Kalau kamu nanti mau kabid juga bisa kelola user atau evaluasi,
-    | ubah jadi ->middleware(['role:admin|kabid'])
     */
     Route::middleware(['role:admin'])->group(function () {
-        // Manajemen User
         Route::resource('users', UserController::class);
-        Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])
-            ->name('users.toggle-status');
-        Route::patch('users/{user}/toggle', [UserController::class, 'toggleActive'])
-            ->name('users.toggle');
-
-        // Manajemen Evaluasi (opsional, CRUD penuh kecuali show)
+        Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+        Route::patch('users/{user}/toggle', [UserController::class, 'toggleActive'])->name('users.toggle');
         Route::resource('evaluasi', EvaluasiController::class)->except(['show']);
     });
 
@@ -52,7 +47,6 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     | KEGIATAN
     |--------------------------------------------------------------------------
-    | Resource penuh untuk Kegiatan (index, create, store, show, edit, update, destroy)
     */
     Route::resource('kegiatan', KegiatanController::class);
 
@@ -60,19 +54,15 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     | SUBKEGIATAN & RINCIAN
     |--------------------------------------------------------------------------
-    | Dibuat nested supaya URL & route name cocok dengan view:
-    |   - subkegiatan.* 
-    |   - subkegiatan.rincian.*  (pakai ->shallow() agar edit/destroy jadi /rincian/{rincian})
     */
     Route::resource('subkegiatan', SubKegiatanController::class)
         ->only(['create','store','show','edit','update','destroy'])
         ->middleware(['role:admin|kabid|pimpinan|staf']);
 
     Route::resource('subkegiatan.rincian', RincianKegiatanController::class)
-        ->shallow() // menghasilkan: rincian.edit/update/destroy tanpa prefix subkegiatan
+        ->shallow()
         ->only(['index','create','store','edit','update','destroy'])
         ->middleware(['role:admin|kabid|pimpinan|staf']);
-
 
     /*
     |--------------------------------------------------------------------------
@@ -81,34 +71,31 @@ Route::middleware(['auth'])->group(function () {
     */
     Route::resource('realisasi', RealisasiController::class);
 
-
-
     Route::resource('rincian.realisasi-rincian', RealisasiRincianController::class)
         ->shallow()
         ->only(['create','store','edit','update','destroy'])
         ->middleware(['role:admin|kabid|pimpinan|staf']);
 
+    /*
+    |--------------------------------------------------------------------------
+    | DOKUMEN REALISASI (Controller terpisah)
+    |--------------------------------------------------------------------------
+    | - Upload: POST /realisasi/{realisasi}/dokumen
+    | - Hapus : DELETE /dokumen/{dokumen}
+    | - Bisa tambahkan preview/download di masa depan
+    */
+    Route::post('realisasi/{realisasi}/dokumen', [DokumenController::class, 'store'])
+        ->name('dokumen.store')
+        ->middleware(['role:admin|kabid|pimpinan|staf']);
 
-    // Upload / hapus dokumen realisasi
-    Route::post('realisasi/{realisasi}/upload-dokumen', [RealisasiController::class, 'uploadDokumen'])
-        ->name('realisasi.upload-dokumen');
-    Route::delete('dokumen/{dokumen}', [RealisasiController::class, 'deleteDokumen'])
-        ->name('dokumen.delete');
-
-    // Dokumen - preview inline, download, dan download-all ZIP
-    Route::get('realisasi/{realisasi}/preview/{dokumen}', [RealisasiController::class, 'preview'])
-        ->name('realisasi.preview');
-    Route::get('realisasi/{realisasi}/download/{dokumen}', [RealisasiController::class, 'download'])
-        ->name('realisasi.download');
-    Route::get('realisasi/{realisasi}/download-all', [RealisasiController::class, 'downloadAll'])
-        ->name('realisasi.download-all');
+    Route::delete('dokumen/{dokumen}', [DokumenController::class, 'destroy'])
+        ->name('dokumen.destroy')
+        ->middleware(['role:admin|kabid|pimpinan|staf']);
 
     /*
     |--------------------------------------------------------------------------
     | MONITORING & EVALUASI
     |--------------------------------------------------------------------------
-    | - Semua user yang login bisa mengakses resource monitoring (lihat data).
-    | - Simpan evaluasi di-monitoring hanya untuk admin.
     */
     Route::resource('monitoring', MonitoringController::class)
         ->parameters(['monitoring' => 'kegiatan'])
@@ -118,15 +105,9 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('role:admin')
         ->name('monitoring.evaluasi');
 
-    // Statistik dan Grafik
-    Route::get('monitoring-stats', [MonitoringController::class, 'getStats'])
-        ->name('monitoring.stats');
-    Route::get('monitoring/{kegiatan}/progress-chart', [MonitoringController::class, 'getProgressChart'])
-        ->name('monitoring.progress-chart');
-
-    // Export Monitoring (Excel/PDF/CSV)
-    Route::get('monitoring-export', [MonitoringController::class, 'exportMonitoring'])
-        ->name('monitoring.export');
+    Route::get('monitoring-stats', [MonitoringController::class, 'getStats'])->name('monitoring.stats');
+    Route::get('monitoring/{kegiatan}/progress-chart', [MonitoringController::class, 'getProgressChart'])->name('monitoring.progress-chart');
+    Route::get('monitoring-export', [MonitoringController::class, 'exportMonitoring'])->name('monitoring.export');
 
     /*
     |--------------------------------------------------------------------------
@@ -144,10 +125,8 @@ Route::middleware(['auth'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('api')->name('api.')->group(function () {
-        Route::get('kegiatan-by-bidang/{bidang}', [KegiatanController::class, 'getByBidang'])
-            ->name('kegiatan-by-bidang');
-        Route::get('dashboard-stats', [DashboardController::class, 'getStats'])
-            ->name('dashboard-stats');
+        Route::get('kegiatan-by-bidang/{bidang}', [KegiatanController::class, 'getByBidang'])->name('kegiatan-by-bidang');
+        Route::get('dashboard-stats', [DashboardController::class, 'getStats'])->name('dashboard-stats');
     });
 });
 

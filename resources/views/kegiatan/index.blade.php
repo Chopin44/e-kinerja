@@ -156,14 +156,12 @@
                                         <i class="fas fa-eye mr-1"></i> Detail
                                     </a>
 
-                                    @can('update', $kegiatan)
+                                    @if(Auth::user()->hasRole(['admin', 'kabid']))
                                     <a href="{{ route('kegiatan.edit', $kegiatan) }}"
                                         class="btn-secondary text-xs px-3 py-1 inline-flex items-center">
                                         <i class="fas fa-edit mr-1"></i> Edit
                                     </a>
-                                    @endcan
 
-                                    @can('delete', $kegiatan)
                                     <form action="{{ route('kegiatan.destroy', $kegiatan) }}" method="POST"
                                         class="inline-flex items-center"
                                         data-confirm="Menghapus kegiatan <b>{{ $kegiatan->nama }}</b> akan menghapus data terkait. Lanjutkan?">
@@ -174,7 +172,7 @@
                                             <i class="fas fa-trash-alt mr-1"></i> Hapus
                                         </button>
                                     </form>
-                                    @endcan
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -277,7 +275,8 @@
                                                     </button>
                                                 </td>
                                                 <td class="px-3 py-2">
-                                                    @if(Auth::user()->hasRole('admin') || Auth::id() === $sub->user_id)
+                                                    @if(Auth::user()->hasRole(['admin', 'kabid']) || Auth::id() ===
+                                                    $sub->user_id)
                                                     <div class="flex items-center gap-2">
                                                         <a href="{{ route('subkegiatan.edit', $sub) }}"
                                                             class="btn-secondary text-xs px-3 py-1 inline-flex items-center">

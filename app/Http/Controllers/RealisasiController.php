@@ -30,24 +30,28 @@ class RealisasiController extends Controller
         ->withSum('realisasiRincians as rincian_total_anggaran', 'realisasi_anggaran');
 
         if ($user->hasRole('staf')) {
-            $query->whereHas('kegiatan', fn($q) => 
-                $q->where('bidang_id', $user->bidang_id)->where('user_id', $user->id)
+        // Staf hanya lihat realisasi yang dia input sendiri
+        $query->where('user_id', $user->id)
+            ->whereHas('kegiatan', fn($q) =>
+                $q->where('bidang_id', $user->bidang_id)
             );
         } elseif ($user->hasRole('kabid') && $user->bidang_id) {
-            $query->whereHas('kegiatan', fn($q) => $q->where('bidang_id', $user->bidang_id));
+            // Kabid lihat semua realisasi di bidangnya
+            $query->whereHas('kegiatan', fn($q) =>
+                $q->where('bidang_id', $user->bidang_id)
+            );
         } elseif ($request->filled('bidang_id')) {
-            $query->whereHas('kegiatan', fn($q) => $q->where('bidang_id', $request->bidang_id));
+            // Admin bisa filter bidang secara manual
+            $query->whereHas('kegiatan', fn($q) =>
+                $q->where('bidang_id', $request->bidang_id)
+            );
         }
+
 
         if ($request->filled('status')) $query->where('status', $request->status);
-        if ($request->filled('tahun')) {
-            $query->whereYear('tanggal_realisasi', $request->tahun);
-        } else {
-            $query->whereYear('tanggal_realisasi', now()->year);
-        }
+        $query->whereYear('tanggal_realisasi', $request->filled('tahun') ? $request->tahun : now()->year);
 
         $realisasis = $query->orderByDesc('tanggal_realisasi')->paginate(10);
-
         $kegiatans = Kegiatan::aktif()
             ->when($user->hasRole('staf'), fn($q) => $q->where('bidang_id', $user->bidang_id)->where('user_id', $user->id))
             ->when($user->hasRole('kabid'), fn($q) => $q->where('bidang_id', $user->bidang_id))
@@ -88,46 +92,65 @@ class RealisasiController extends Controller
             'rincians.*.rincian_kegiatan_id' => 'required|exists:rincian_kegiatans,id',
             'rincians.*.realisasi_anggaran'  => 'required|numeric|min:0',
             'rincians.*.realisasi_fisik'     => 'nullable|numeric|min:0|max:100',
+            'dokumen.*'          => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx',
         ]);
 
         $sub = SubKegiatan::findOrFail($request->sub_kegiatan_id);
         if ($sub->kegiatan_id != $request->kegiatan_id)
             return back()->withErrors(['sub_kegiatan_id' => 'Subkegiatan tidak sesuai dengan kegiatan'])->withInput();
 
-        $realisasi = Realisasi::create([
-            'kegiatan_id'        => $request->kegiatan_id,
-            'sub_kegiatan_id'    => $request->sub_kegiatan_id,
-            'user_id'            => Auth::id(),
-            'realisasi_fisik'    => 0,
-            'realisasi_anggaran' => 0,
-            'tanggal_realisasi'  => $request->tanggal_realisasi,
-            'lokasi'             => $request->lokasi,
-            'catatan'            => $request->catatan,
-            'status'             => 'submitted',
-        ]);
-
-        $total = 0;
-        foreach ($request->rincians as $r) {
-            RealisasiRincian::create([
-                'realisasi_id'        => $realisasi->id,
-                'rincian_kegiatan_id' => $r['rincian_kegiatan_id'],
-                'user_id'             => Auth::id(),
-                'realisasi_anggaran'  => $r['realisasi_anggaran'],
-                'realisasi_fisik'     => $r['realisasi_fisik'] ?? null,
+        DB::transaction(function () use ($request, $sub) {
+            $realisasi = Realisasi::create([
+                'kegiatan_id'        => $request->kegiatan_id,
+                'sub_kegiatan_id'    => $request->sub_kegiatan_id,
+                'user_id'            => Auth::id(),
+                'realisasi_fisik'    => 0,
+                'realisasi_anggaran' => 0,
+                'tanggal_realisasi'  => $request->tanggal_realisasi,
+                'lokasi'             => $request->lokasi,
+                'catatan'            => $request->catatan,
+                'status'             => 'submitted',
             ]);
-            $total += $r['realisasi_anggaran'];
-        }
 
-        $avgFisik = RealisasiRincian::where('realisasi_id', $realisasi->id)->avg('realisasi_fisik') ?? 0;
+            $total = 0;
+            foreach ($request->rincians as $r) {
+                RealisasiRincian::create([
+                    'realisasi_id'        => $realisasi->id,
+                    'rincian_kegiatan_id' => $r['rincian_kegiatan_id'],
+                    'user_id'             => Auth::id(),
+                    'realisasi_anggaran'  => $r['realisasi_anggaran'],
+                    'realisasi_fisik'     => $r['realisasi_fisik'] ?? null,
+                ]);
+                $total += $r['realisasi_anggaran'];
+            }
 
-        $realisasi->update([
-            'realisasi_anggaran' => $total,
-            'realisasi_fisik'    => $avgFisik,
-        ]);
+            $avgFisik = RealisasiRincian::where('realisasi_id', $realisasi->id)->avg('realisasi_fisik') ?? 0;
+            $realisasi->update([
+                'realisasi_anggaran' => $total,
+                'realisasi_fisik'    => $avgFisik,
+            ]);
 
-        $this->updateSubKegiatanProgress($realisasi->sub_kegiatan_id);
+            // ✅ Simpan dokumen (jika ada)
+            if ($request->hasFile('dokumen')) {
+                foreach ($request->file('dokumen') as $file) {
+                    $path = $file->store('dokumen_realisasi', 'public');
 
-        return redirect()->route('realisasi.index')->with('success', 'Realisasi berhasil ditambahkan!');
+                    Dokumen::create([
+                        'realisasi_id' => $realisasi->id,
+                        'nama_file'    => $file->hashName(),
+                        'nama_asli'    => $file->getClientOriginalName(),
+                        'path'         => $path,
+                        'mime_type'    => $file->getMimeType(),
+                        'size'         => $file->getSize(),
+                        'jenis'        => $this->getJenisDokumen($file->getMimeType()),
+                    ]);
+                }
+            }
+
+            $this->updateSubKegiatanProgress($realisasi->sub_kegiatan_id);
+        });
+
+        return redirect()->route('realisasi.index')->with('success', 'Realisasi dan dokumen berhasil ditambahkan!');
     }
 
     public function edit(Realisasi $realisasi)
@@ -182,12 +205,10 @@ class RealisasiController extends Controller
                     'lokasi'              => $r['lokasi'] ?? $request->lokasi,
                     'catatan'             => $r['catatan'] ?? null,
                 ]);
-
                 $total += $r['realisasi_anggaran'];
             }
 
             $avgFisik = RealisasiRincian::where('realisasi_id', $realisasi->id)->avg('realisasi_fisik') ?? 0;
-
             $realisasi->update([
                 'kegiatan_id'        => $request->kegiatan_id,
                 'sub_kegiatan_id'    => $request->sub_kegiatan_id,
@@ -222,7 +243,9 @@ class RealisasiController extends Controller
         DB::transaction(function () use ($realisasi) {
             $realisasi->load(['dokumens', 'realisasiRincians']);
             foreach ($realisasi->dokumens as $doc) {
-                if (Storage::disk('public')->exists($doc->path)) Storage::disk('public')->delete($doc->path);
+                if (Storage::disk('public')->exists($doc->path)) {
+                    Storage::disk('public')->delete($doc->path);
+                }
                 $doc->delete();
             }
             $realisasi->realisasiRincians()->delete();
@@ -230,7 +253,7 @@ class RealisasiController extends Controller
         });
 
         $this->updateSubKegiatanProgress($realisasi->sub_kegiatan_id);
-        return redirect()->route('realisasi.index')->with('success', 'Realisasi dan dokumen berhasil dihapus.');
+        return redirect()->route('realisasi.index')->with('success', 'Realisasi dan semua dokumen berhasil dihapus.');
     }
 
     private function updateSubKegiatanProgress(int $subKegiatanId): void
@@ -253,7 +276,7 @@ class RealisasiController extends Controller
     {
         if (str_starts_with($mimeType, 'image/')) return 'foto';
         if ($mimeType === 'application/pdf') return 'laporan';
-        if (str_starts_with($mimeType, 'application/')) return 'kwitansi';
+        if (str_starts_with($mimeType, 'application/')) return 'dokumen';
         return 'lainnya';
     }
 }

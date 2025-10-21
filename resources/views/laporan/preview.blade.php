@@ -254,6 +254,62 @@
     @endif
 </div>
 
+<div class="mt-8 space-y-6">
+    {{-- Arahan --}}
+    <div class="rounded-lg border border-gray-300 bg-white text-left">
+        <div class="px-4 py-2 border-b bg-gray-50 font-semibold text-gray-700">
+            Arahan
+        </div>
+        <div class="p-4">
+            @for($i=0; $i<3; $i++) <div class="h-6 border-b border-dashed border-gray-300">
+        </div>
+        @endfor
+    </div>
+</div>
+
+
+{{-- Tindak Lanjut --}}
+<div class="rounded-lg border border-gray-300 bg-white text-left">
+    <div class="px-4 py-2 border-b bg-gray-50 font-semibold text-gray-700">
+        Tindak Lanjut
+    </div>
+    <div class="p-4">
+        @for($i=0; $i<3; $i++) <div class="h-6 border-b border-dashed border-gray-300">
+    </div>
+    @endfor
+</div>
+</div>
+</div>
+
+{{-- TANDA TANGAN --}}
+@php
+$namaTTD = $penandatangan->name ?? 'Kepala Dinas';
+$nipTTD = $penandatangan->nip ?? null;
+@endphp
+
+<div class="mt-10">
+    <div class="text-right">
+        <div class="inline-block text-center">
+            <div class="font-normal text-sm text-black mb-2">
+                Kajen,<span class="ml-12">{{ now()->translatedFormat('F Y') }}</span>
+            </div>
+            <div class="font-bold text-sm text-black">Kepala Dinas</div>
+            <div class="font-bold text-sm text-black">Kepemudaan dan Olahraga dan Pariwisata</div>
+            <div class="font-bold text-sm text-black">Kabupaten Pekalongan</div>
+
+            <div class="h-20"></div>
+
+            <div class="font-bold text-sm text-black underline">
+                {{ $namaTTD }}
+            </div>
+            @if(!empty($nipTTD))
+            <div class="font-bold text-sm text-black">NIP. {{ $nipTTD }}</div>
+            @endif
+        </div>
+    </div>
+</div>
+
+
 {{-- FOOTER CETAK --}}
 <div class="text-right text-xs text-gray-500 pt-4 border-t mt-8">
     <p>Dicetak: {{ now()->translatedFormat('d F Y, H:i') }} WIB</p>

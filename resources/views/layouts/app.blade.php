@@ -123,7 +123,7 @@
                             <img src="{{ asset('images/dinporapar.png') }}" alt="Logo DINPORAPAR"
                                 class="w-12 h-12 mr-4">
                             <div class="flex flex-col leading-tight">
-                                <span class="text-blue-600">Sistem Kinerja</span>
+                                <span class="text-blue-600">Sistem Laporan Kinerja</span>
                                 <span class="text-sm text-gray-800 font-normal">
                                     DINPORAPAR Kab. Pekalongan
                                 </span>
