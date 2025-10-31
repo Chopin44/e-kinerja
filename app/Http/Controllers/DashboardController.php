@@ -18,9 +18,10 @@ class DashboardController extends Controller
         $year = (int)($request->get('tahun') ?: date('Y'));
         $user = Auth::user();
 
-        // Jika user adalah STAF → tampilkan dashboard sederhana
+        // ===============================
+        // === DASHBOARD STAF ============
+        // ===============================
         if ($user->hasRole('staf')) {
-            // Ambil ringkasan milik staf
             $kegiatanIds = Kegiatan::where('user_id', $user->id)
                 ->where('bidang_id', $user->bidang_id)
                 ->where('tahun', $year)
@@ -32,7 +33,6 @@ class DashboardController extends Controller
                 ->latest()
                 ->take(8)
                 ->get();
-
 
             $subIds = SubKegiatan::whereIn('kegiatan_id', $kegiatanIds)->pluck('id');
             $rincianIds = RincianKegiatan::whereIn('sub_kegiatan_id', $subIds)->pluck('id');
@@ -49,6 +49,24 @@ class DashboardController extends Controller
 
             $persentaseRealisasi = $totalPagu > 0 ? ($totalRealisasi / $totalPagu) * 100 : 0;
 
+            // Tambahkan progress per kegiatan (patch baru)
+            foreach ($kegiatanTerbaru as $k) {
+                $subsOfK = SubKegiatan::where('kegiatan_id', $k->id)->pluck('id');
+
+                $k->target_anggaran = RincianKegiatan::whereIn('sub_kegiatan_id', $subsOfK)
+                    ->sum('anggaran');
+
+                $k->current_budget_realization = RealisasiRincian::join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
+                    ->whereIn('rincian_kegiatans.sub_kegiatan_id', $subsOfK)
+                    ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                    ->sum('realisasi_rincians.realisasi_anggaran');
+
+                $k->current_progress = RealisasiRincian::join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
+                    ->whereIn('rincian_kegiatans.sub_kegiatan_id', $subsOfK)
+                    ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                    ->avg('realisasi_rincians.realisasi_fisik') ?? 0;
+            }
+
             return view('dashboard.staff', [
                 'user'                => $user,
                 'tahun'               => $year,
@@ -56,11 +74,13 @@ class DashboardController extends Controller
                 'totalRealisasi'      => $totalRealisasi,
                 'persentaseRealisasi' => round($persentaseRealisasi, 1),
                 'avgFisik'            => round($avgFisik ?? 0, 1),
-                'kegiatanTerbaru' => $kegiatanTerbaru,
+                'kegiatanTerbaru'     => $kegiatanTerbaru,
             ]);
         }
 
-        // === Dashboard utama untuk Admin & Kabid ===
+        // ===============================
+        // === DASHBOARD ADMIN / KABID ===
+        // ===============================
         $kegiatanBase = Kegiatan::query()
             ->with(['bidang', 'user'])
             ->where('tahun', $year);
@@ -110,6 +130,7 @@ class DashboardController extends Controller
             $real = (float)($realPerSub[$sid]->realisasi ?? 0);
             $progressAnggaranSub[$sid] = $pagu > 0 ? ($real / $pagu) * 100 : 0;
         }
+
         $avgProgressAnggaran = !empty($progressAnggaranSub)
             ? array_sum($progressAnggaranSub) / count($progressAnggaranSub)
             : 0;
