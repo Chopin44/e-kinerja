@@ -10,16 +10,21 @@
                 Selamat datang, <b>{{ $user->name }}</b> dari
                 <b>{{ $user->bidang->nama ?? '-' }}</b> — Tahun {{ $tahun }}
             </p>
+            <p class="text-xs text-gray-500 mt-2 italic">
+                *Data yang ditampilkan berdasarkan realisasi yang Anda input sendiri.
+            </p>
         </div>
 
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Total Pagu -->
+            <!-- Total Anggaran -->
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow p-6 text-white">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">Total Anggaran</p>
-                        <p class="text-3xl font-bold">Rp {{ number_format($totalPagu, 0, ',', '.') }}</p>
+                        <p class="text-3xl font-bold">
+                            Rp {{ number_format($totalPagu, 0, ',', '.') }}
+                        </p>
                     </div>
                     <i class="fas fa-money-bill-wave text-4xl text-blue-200"></i>
                 </div>
@@ -30,7 +35,9 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium">Total Realisasi</p>
-                        <p class="text-3xl font-bold">Rp {{ number_format($totalRealisasi, 0, ',', '.') }}</p>
+                        <p class="text-3xl font-bold">
+                            Rp {{ number_format($totalRealisasi, 0, ',', '.') }}
+                        </p>
                     </div>
                     <i class="fas fa-coins text-4xl text-green-200"></i>
                 </div>
@@ -41,7 +48,9 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-cyan-100 text-sm font-medium">Persentase Realisasi</p>
-                        <p class="text-3xl font-bold">{{ number_format($persentaseRealisasi, 1) }}%</p>
+                        <p class="text-3xl font-bold">
+                            {{ number_format($persentaseRealisasi, 1) }}%
+                        </p>
                     </div>
                     <i class="fas fa-percentage text-4xl text-cyan-200"></i>
                 </div>
@@ -52,7 +61,9 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-indigo-100 text-sm font-medium">Rata-rata Fisik</p>
-                        <p class="text-3xl font-bold">{{ number_format($avgFisik, 1) }}%</p>
+                        <p class="text-3xl font-bold">
+                            {{ number_format($avgFisik, 1) }}%
+                        </p>
                     </div>
                     <i class="fas fa-chart-pie text-4xl text-indigo-200"></i>
                 </div>
@@ -67,7 +78,7 @@
                     Kegiatan Terbaru
                 </h2>
                 <span class="text-sm text-gray-500">
-                    Menampilkan kegiatan terbaru yang Anda input
+                    Menampilkan 8 kegiatan terbaru yang Anda input
                 </span>
             </div>
 
@@ -86,7 +97,7 @@
                                 Progress Fisik
                             </th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                                Realisasi Anggaran
+                                Progress Anggaran
                             </th>
                         </tr>
                     </thead>
@@ -100,26 +111,34 @@
                         <tr class="hover:bg-gray-50 transition">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">{{ $kegiatan->nama }}</div>
-                                <div class="text-sm text-gray-500">Dibuat: {{ $kegiatan->created_at->translatedFormat('d
-                                    F Y') }}</div>
+                                <div class="text-sm text-gray-500">
+                                    Dibuat: {{ $kegiatan->created_at->translatedFormat('d F Y') }}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 {{ $kegiatan->bidang->nama ?? '-' }}
                             </td>
+
+                            <!-- Progress Fisik -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-green-500 h-2 rounded-full progress-fill"
+                                    <div class="bg-green-500 h-2 rounded-full"
                                         style="width: {{ $kegiatan->current_progress }}%"></div>
                                 </div>
-                                <div class="text-sm text-gray-500 mt-1">{{ number_format($kegiatan->current_progress, 1)
-                                    }}%</div>
+                                <div class="text-sm text-gray-500 mt-1">
+                                    {{ number_format($kegiatan->current_progress, 1) }}%
+                                </div>
                             </td>
+
+                            <!-- Progress Anggaran -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-500 h-2 rounded-full progress-fill"
-                                        style="width: {{ $budgetProgress }}%"></div>
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: {{ $budgetProgress }}%">
+                                    </div>
                                 </div>
-                                <div class="text-sm text-gray-500 mt-1">{{ number_format($budgetProgress, 1) }}%</div>
+                                <div class="text-sm text-gray-500 mt-1">
+                                    {{ number_format($budgetProgress, 1) }}%
+                                </div>
                             </td>
                         </tr>
                         @endforeach

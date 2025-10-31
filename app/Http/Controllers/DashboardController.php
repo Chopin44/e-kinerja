@@ -18,85 +18,120 @@ class DashboardController extends Controller
         $year = (int)($request->get('tahun') ?: date('Y'));
         $user = Auth::user();
 
-        // ===============================
-        // === DASHBOARD STAF ============
-        // ===============================
+        /**
+         * ========================================
+         *  DASHBOARD UNTUK STAF
+         * ========================================
+         */
         if ($user->hasRole('staf')) {
+            // Ambil kegiatan milik staf sesuai bidang & tahun
             $kegiatanIds = Kegiatan::where('user_id', $user->id)
                 ->where('bidang_id', $user->bidang_id)
                 ->where('tahun', $year)
                 ->pluck('id');
 
+            // Ambil semua subkegiatan milik kegiatan tersebut
+            $subIds = SubKegiatan::whereIn('kegiatan_id', $kegiatanIds)->pluck('id');
+
+            // Ambil rincian berdasarkan subkegiatan
+            $rincianIds = RincianKegiatan::whereIn('sub_kegiatan_id', $subIds)->pluck('id');
+
+            // Total anggaran (pagu)
+            $totalPagu = RincianKegiatan::whereIn('id', $rincianIds)->sum('anggaran');
+
+            // Total realisasi (toleransi tanggal_realisasi null)
+            $totalRealisasi = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
+                ->where(function ($q) use ($year) {
+                    $q->whereYear('tanggal_realisasi', $year)
+                      ->orWhereNull('tanggal_realisasi');
+                })
+                ->sum('realisasi_anggaran');
+
+            // Rata-rata fisik
+            $avgFisik = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
+                ->where(function ($q) use ($year) {
+                    $q->whereYear('tanggal_realisasi', $year)
+                      ->orWhereNull('tanggal_realisasi');
+                })
+                ->whereNotNull('realisasi_fisik')
+                ->avg('realisasi_fisik') ?? 0;
+
+            // Persentase realisasi
+            $persentaseRealisasi = $totalPagu > 0 ? ($totalRealisasi / $totalPagu) * 100 : 0;
+
+            // Kegiatan terbaru milik staf
             $kegiatanTerbaru = Kegiatan::where('user_id', $user->id)
                 ->where('bidang_id', $user->bidang_id)
                 ->where('tahun', $year)
+                ->with(['bidang', 'subKegiatans.rincianKegiatans.realisasiRincians'])
                 ->latest()
                 ->take(8)
                 ->get();
 
-            $subIds = SubKegiatan::whereIn('kegiatan_id', $kegiatanIds)->pluck('id');
-            $rincianIds = RincianKegiatan::whereIn('sub_kegiatan_id', $subIds)->pluck('id');
-
-            $totalPagu = RincianKegiatan::whereIn('id', $rincianIds)->sum('anggaran');
-            $totalRealisasi = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
-                ->whereYear('tanggal_realisasi', $year)
-                ->sum('realisasi_anggaran');
-
-            $avgFisik = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
-                ->whereYear('tanggal_realisasi', $year)
-                ->whereNotNull('realisasi_fisik')
-                ->avg('realisasi_fisik');
-
-            $persentaseRealisasi = $totalPagu > 0 ? ($totalRealisasi / $totalPagu) * 100 : 0;
-
-            // Tambahkan progress per kegiatan (patch baru)
+            // Hitung progress tiap kegiatan
             foreach ($kegiatanTerbaru as $k) {
-                $subsOfK = SubKegiatan::where('kegiatan_id', $k->id)->pluck('id');
+                $subIds = $k->subKegiatans->pluck('id');
+                $rincianIds = RincianKegiatan::whereIn('sub_kegiatan_id', $subIds)->pluck('id');
 
-                $k->target_anggaran = RincianKegiatan::whereIn('sub_kegiatan_id', $subsOfK)
-                    ->sum('anggaran');
+                $target = RincianKegiatan::whereIn('sub_kegiatan_id', $subIds)->sum('anggaran');
 
-                $k->current_budget_realization = RealisasiRincian::join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
-                    ->whereIn('rincian_kegiatans.sub_kegiatan_id', $subsOfK)
-                    ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
-                    ->sum('realisasi_rincians.realisasi_anggaran');
+                $realisasi = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
+                    ->where(function ($q) use ($year) {
+                        $q->whereYear('tanggal_realisasi', $year)
+                          ->orWhereNull('tanggal_realisasi');
+                    })
+                    ->sum('realisasi_anggaran');
 
-                $k->current_progress = RealisasiRincian::join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
-                    ->whereIn('rincian_kegiatans.sub_kegiatan_id', $subsOfK)
-                    ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
-                    ->avg('realisasi_rincians.realisasi_fisik') ?? 0;
+                $fisik = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
+                    ->where(function ($q) use ($year) {
+                        $q->whereYear('tanggal_realisasi', $year)
+                          ->orWhereNull('tanggal_realisasi');
+                    })
+                    ->whereNotNull('realisasi_fisik')
+                    ->avg('realisasi_fisik');
+
+                $k->target_anggaran = $target;
+                $k->current_budget_realization = $realisasi;
+                $k->current_progress = round($fisik ?? 0, 1);
             }
 
             return view('dashboard.staff', [
                 'user'                => $user,
                 'tahun'               => $year,
-                'totalPagu'           => $totalPagu,
-                'totalRealisasi'      => $totalRealisasi,
+                'totalPagu'           => round($totalPagu ?? 0, 0),
+                'totalRealisasi'      => round($totalRealisasi ?? 0, 0),
                 'persentaseRealisasi' => round($persentaseRealisasi, 1),
                 'avgFisik'            => round($avgFisik ?? 0, 1),
                 'kegiatanTerbaru'     => $kegiatanTerbaru,
             ]);
         }
 
-        // ===============================
-        // === DASHBOARD ADMIN / KABID ===
-        // ===============================
+        /**
+         * ========================================
+         *  DASHBOARD UNTUK ADMIN / KABID
+         * ========================================
+         */
         $kegiatanBase = Kegiatan::query()
             ->with(['bidang', 'user'])
             ->where('tahun', $year);
 
+        // Jika kabid, filter berdasarkan bidang
         if ($user->hasRole('kabid') && $user->bidang_id) {
             $kegiatanBase->where('bidang_id', $user->bidang_id);
         }
 
-        // Ambil id set
+        // Ambil semua ID yang relevan
         $kegiatanIds = (clone $kegiatanBase)->pluck('id');
         $subIds = SubKegiatan::whereIn('kegiatan_id', $kegiatanIds)->pluck('id');
         $rincianIds = RincianKegiatan::whereIn('sub_kegiatan_id', $subIds)->pluck('id');
-        $realRincianBase = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
-            ->whereYear('tanggal_realisasi', $year);
 
-        // === Ringkasan umum ===
+        $realRincianBase = RealisasiRincian::whereIn('rincian_kegiatan_id', $rincianIds)
+            ->where(function ($q) use ($year) {
+                $q->whereYear('tanggal_realisasi', $year)
+                  ->orWhereNull('tanggal_realisasi');
+            });
+
+        // Statistik umum
         $totalKegiatan = (clone $kegiatanBase)->count();
         $totalSubKegiatan = SubKegiatan::whereIn('kegiatan_id', $kegiatanIds)->count();
         $totalRincian = RincianKegiatan::whereIn('sub_kegiatan_id', $subIds)->count();
@@ -109,7 +144,7 @@ class DashboardController extends Controller
             ->whereNotNull('realisasi_fisik')
             ->avg('realisasi_fisik') ?? 0;
 
-        // Anggaran rata-rata per sub
+        // Rata-rata progress anggaran per subkegiatan
         $paguPerSub = RincianKegiatan::select('sub_kegiatan_id', DB::raw('SUM(anggaran) as pagu'))
             ->whereIn('sub_kegiatan_id', $subIds)
             ->groupBy('sub_kegiatan_id')
@@ -119,7 +154,10 @@ class DashboardController extends Controller
         $realPerSub = RealisasiRincian::select('rincian_kegiatans.sub_kegiatan_id', DB::raw('SUM(realisasi_rincians.realisasi_anggaran) as realisasi'))
             ->join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
             ->whereIn('rincian_kegiatans.sub_kegiatan_id', $subIds)
-            ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+            ->where(function ($q) use ($year) {
+                $q->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                  ->orWhereNull('realisasi_rincians.tanggal_realisasi');
+            })
             ->groupBy('rincian_kegiatans.sub_kegiatan_id')
             ->get()
             ->keyBy('sub_kegiatan_id');
@@ -135,7 +173,7 @@ class DashboardController extends Controller
             ? array_sum($progressAnggaranSub) / count($progressAnggaranSub)
             : 0;
 
-        // On Track (progress >= 80%)
+        // Kegiatan On Track (>= 80%)
         $paguPerKegiatan = RincianKegiatan::select('sub_kegiatans.kegiatan_id', DB::raw('SUM(rincian_kegiatans.anggaran) as pagu'))
             ->join('sub_kegiatans', 'sub_kegiatans.id', '=', 'rincian_kegiatans.sub_kegiatan_id')
             ->whereIn('sub_kegiatans.kegiatan_id', $kegiatanIds)
@@ -147,7 +185,10 @@ class DashboardController extends Controller
             ->join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
             ->join('sub_kegiatans', 'sub_kegiatans.id', '=', 'rincian_kegiatans.sub_kegiatan_id')
             ->whereIn('sub_kegiatans.kegiatan_id', $kegiatanIds)
-            ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+            ->where(function ($q) use ($year) {
+                $q->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                  ->orWhereNull('realisasi_rincians.tanggal_realisasi');
+            })
             ->groupBy('sub_kegiatans.kegiatan_id')
             ->get()
             ->keyBy('kegiatan_id');
@@ -160,7 +201,7 @@ class DashboardController extends Controller
             if ($pct >= 80) $kegiatanOnTrack++;
         }
 
-        // === Per Bidang ===
+        // Statistik per bidang
         $bidangIds = (clone $kegiatanBase)->select('bidang_id')->distinct()->pluck('bidang_id');
         $bidangRows = Bidang::whereIn('id', $bidangIds)->get();
 
@@ -182,7 +223,10 @@ class DashboardController extends Controller
                 ->join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
                 ->join('sub_kegiatans', 'sub_kegiatans.id', '=', 'rincian_kegiatans.sub_kegiatan_id')
                 ->whereIn('sub_kegiatans.kegiatan_id', $kegs)
-                ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                ->where(function ($q) use ($year) {
+                    $q->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                      ->orWhereNull('realisasi_rincians.tanggal_realisasi');
+                })
                 ->value('realisasi') ?? 0;
 
             $avgProgPerBidang[$bid] = $paguBid > 0 ? ($realBid / $paguBid) * 100 : 0;
@@ -198,7 +242,7 @@ class DashboardController extends Controller
             ];
         });
 
-        // === Kegiatan terbaru ===
+        // Kegiatan terbaru (Admin / Kabid)
         $kegiatanTerbaru = (clone $kegiatanBase)
             ->latest()
             ->take(8)
@@ -214,7 +258,10 @@ class DashboardController extends Controller
                 $fisikRows = RealisasiRincian::select(DB::raw('AVG(realisasi_rincians.realisasi_fisik) as avg_fisik'))
                     ->join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
                     ->whereIn('rincian_kegiatans.sub_kegiatan_id', $subsOfK)
-                    ->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                    ->where(function ($q) use ($year) {
+                        $q->whereYear('realisasi_rincians.tanggal_realisasi', $year)
+                          ->orWhereNull('realisasi_rincians.tanggal_realisasi');
+                    })
                     ->whereNotNull('realisasi_rincians.realisasi_fisik')
                     ->avg('realisasi_rincians.realisasi_fisik');
                 $k->current_progress = round($fisikRows ?? 0, 1);
@@ -223,16 +270,17 @@ class DashboardController extends Controller
             }
         }
 
+        // Kirim ke view dashboard utama
         return view('dashboard.index', [
             'totalKegiatan' => $totalKegiatan,
             'totalSubKegiatan' => $totalSubKegiatan,
             'totalRincian' => $totalRincian,
-            'avgProgressFisik' => $avgProgressFisik,
-            'avgProgressAnggaran' => $avgProgressAnggaran,
+            'avgProgressFisik' => round($avgProgressFisik, 1),
+            'avgProgressAnggaran' => round($avgProgressAnggaran, 1),
             'kegiatanOnTrack' => $kegiatanOnTrack,
-            'totalPagu' => $totalPagu,
-            'totalRealisasi' => $totalRealisasi,
-            'persentaseRealisasi' => $persentaseRealisasi,
+            'totalPagu' => round($totalPagu ?? 0, 0),
+            'totalRealisasi' => round($totalRealisasi ?? 0, 0),
+            'persentaseRealisasi' => round($persentaseRealisasi, 1),
             'bidangs' => $bidangs,
             'kegiatanTerbaru' => $kegiatanTerbaru,
         ]);
