@@ -153,49 +153,51 @@
         }
 
         function printLaporan() {
-            const reportContent = document.getElementById('reportContent');
-            if (!reportContent || !reportContent.innerHTML.trim()) {
-                alert('Tidak ada laporan untuk dicetak!');
-                return;
-            }
-
-            const printWindow = window.open('', '', 'width=1200,height=900');
-            printWindow.document.open();
-            printWindow.document.write(`
-                <html>
-                <head>
-                    <title>Cetak Laporan</title>
-                    <link href="{{ mix('resources/css/app.css') }}" rel="stylesheet">
-                    <style>
-                        @page { size: A4 landscape; margin: 12mm; }
-                        html, body {
-                            font-family: 'Inter', sans-serif;
-                            background: white;
-                            color: #111827;
-                        }
-                        table {
-                            border-collapse: collapse;
-                            width: 100%;
-                            font-size: 13px;
-                        }
-                        th, td {
-                            border: 1px solid #e5e7eb;
-                            padding: 6px 10px;
-                        }
-                        thead { background: #f9fafb; }
-                    </style>
-                </head>
-                <body>
-                    <div style="text-align:center;margin-bottom:16px;">
-                        <img src="{{ asset('images/dinporapar.png') }}" class="w-16 mx-auto mb-2">
-                        <h2 style="font-weight:bold;">Dinas Kepemudaan dan Olahraga dan Pariwisata</h2>
-                    </div>
-                    ${reportContent.innerHTML}
-                    <script>window.onload=function(){setTimeout(()=>window.print(),600)}<\/script>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
+        const reportContent = document.getElementById('reportContent');
+        if (!reportContent || !reportContent.innerHTML.trim()) {
+            alert('Tidak ada laporan untuk dicetak!');
+            return;
         }
+
+        const printWindow = window.open('', '', 'width=1200,height=900');
+        printWindow.document.open();
+        printWindow.document.write(`
+            <html>
+            <head>
+                <title>Cetak Laporan</title>
+                <!-- ✅ Gunakan CSS hasil build Vite -->
+                <link href="{{ asset(mix_vite_path('resources/css/app.css')) }}" rel="stylesheet">
+
+                <style>
+                    @page { size: A4 landscape; margin: 12mm; }
+                    html, body {
+                        font-family: 'Inter', sans-serif;
+                        background: white;
+                        color: #111827;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        font-size: 13px;
+                    }
+                    th, td {
+                        border: 1px solid #e5e7eb;
+                        padding: 6px 10px;
+                    }
+                    thead { background: #f9fafb; }
+                </style>
+            </head>
+            <body>
+                <div style="text-align:center;margin-bottom:16px;">
+                    <img src="{{ asset('images/dinporapar.png') }}" style="height:64px; display:block; margin:0 auto 6px auto;">
+                    <h2 style="font-weight:bold;">Dinas Kepemudaan dan Olahraga dan Pariwisata</h2>
+                </div>
+                ${reportContent.innerHTML}
+                <script>window.onload=function(){setTimeout(()=>window.print(),600)}<\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
     </script>
 </x-app-layout>
