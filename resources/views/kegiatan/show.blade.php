@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="space-y-6">
+    <div class="space-y-6 max-w-5xl mx-auto px-4">
         <!-- Page Header -->
         <div class="bg-white rounded-lg shadow p-6 flex items-center justify-between">
             <div>
@@ -24,6 +24,7 @@
         <!-- Detail Card -->
         <div class="bg-white rounded-lg shadow p-6">
             <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <!-- Informasi dasar -->
                 <div>
                     <dt class="text-sm font-medium text-gray-500">Nama Kegiatan</dt>
                     <dd class="mt-1 text-sm text-gray-900">{{ $kegiatan->nama }}</dd>
@@ -31,13 +32,14 @@
 
                 <div>
                     <dt class="text-sm font-medium text-gray-500">Bidang</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{ $kegiatan->bidang->nama }}</dd>
+                    <dd class="mt-1 text-sm text-gray-900">{{ $kegiatan->bidang->nama ?? '-' }}</dd>
                 </div>
 
                 <div>
                     <dt class="text-sm font-medium text-gray-500">Penanggung Jawab</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{ $kegiatan->user->name }} ({{ $kegiatan->user->bidang->nama
-                        ?? '-' }})</dd>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {{ $kegiatan->user->name }} ({{ $kegiatan->user->bidang->nama ?? '-' }})
+                    </dd>
                 </div>
 
                 <div>
@@ -52,71 +54,68 @@
 
                 <div>
                     <dt class="text-sm font-medium text-gray-500">Tanggal Mulai</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{ \Carbon\Carbon::parse($kegiatan->tanggal_mulai)->format('d
-                        M Y') }}</dd>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {{ \Carbon\Carbon::parse($kegiatan->tanggal_mulai)->translatedFormat('d F Y') }}
+                    </dd>
                 </div>
 
                 <div>
-                    <dt class="text-sm font-medium text-gray-500">Tanggal Selesai</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{
-                        \Carbon\Carbon::parse($kegiatan->tanggal_selesai)->format('d M Y') }}</dd>
+                    <dt class="text-sm font-medium text-gray-500">Rencana Tanggal Selesai</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        {{ \Carbon\Carbon::parse($kegiatan->tanggal_selesai)->translatedFormat('d F Y') }}
+                    </dd>
+                </div>
+
+                <!-- Target dan progress -->
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Target Fisik Total</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ number_format($totalTargetFisik, 1) }}%</dd>
                 </div>
 
                 <div>
-                    <dt class="text-sm font-medium text-gray-500">Target Fisik</dt>
-                    <dd class="mt-1 text-sm text-gray-900">{{ $kegiatan->target_fisik }} %</dd>
+                    <dt class="text-sm font-medium text-gray-500">Target Anggaran Total</dt>
+                    <dd class="mt-1 text-sm text-gray-900">
+                        Rp {{ number_format($totalTargetAnggaran, 0, ',', '.') }}
+                    </dd>
                 </div>
 
-                <div>
-                    <dt class="text-sm font-medium text-gray-500">Target Anggaran</dt>
-                    <dd class="mt-1 text-sm text-gray-900">Rp {{ number_format($kegiatan->target_anggaran, 0, ',', '.')
-                        }}</dd>
-                </div>
-
-                <div>
+                <!-- Progress Fisik -->
+                <div class="md:col-span-1">
                     <dt class="text-sm font-medium text-gray-500">Progress Fisik</dt>
                     <dd class="mt-2">
                         <div class="flex justify-between text-xs text-gray-600 mb-1">
-                            <span>{{ number_format($kegiatan->current_progress, 1) }}%</span>
+                            <span>Realisasi: {{ number_format($totalRealisasiFisik, 1) }}%</span>
+                            <span>{{ number_format($fisikProgress, 1) }}%</span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ $kegiatan->current_progress }}%">
-                            </div>
+                        @php $safeFisik = max(0, min(100, $fisikProgress)); @endphp
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-in-out"
+                                style="width: {{ $safeFisik }}%;"></div>
                         </div>
                     </dd>
                 </div>
 
-                <div>
-                    @php
-                    $budgetProgress = $kegiatan->target_anggaran > 0
-                    ? ($kegiatan->current_budget_realization / $kegiatan->target_anggaran) * 100
-                    : 0;
-                    @endphp
+                <!-- Progress Anggaran -->
+                <div class="md:col-span-1">
                     <dt class="text-sm font-medium text-gray-500">Progress Anggaran</dt>
                     <dd class="mt-2">
                         <div class="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>Realisasi: Rp {{ number_format($totalRealisasiAnggaran, 0, ',', '.') }}</span>
                             <span>{{ number_format($budgetProgress, 1) }}%</span>
                         </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-green-600 h-2 rounded-full" style="width: {{ $budgetProgress }}%"></div>
+                        @php $safeBudget = max(0, min(100, $budgetProgress)); @endphp
+                        <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div class="bg-green-600 h-2 rounded-full transition-all duration-500 ease-in-out"
+                                style="width: {{ $safeBudget }}%;"></div>
                         </div>
                     </dd>
                 </div>
 
+                <!-- Deskripsi -->
                 <div class="md:col-span-2">
                     <dt class="text-sm font-medium text-gray-500">Deskripsi</dt>
-                    <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">{{ $kegiatan->deskripsi ?? '-' }}</dd>
-                </div>
-
-                <div>
-                    <dt class="text-sm font-medium text-gray-500">Status Evaluasi</dt>
-                    @php
-                    $statusClass = 'status-' . str_replace('_', '-', $kegiatan->status_evaluasi);
-                    @endphp
-                    <dd class="mt-1">
-                        <span class="status-badge {{ $statusClass }}">
-                            {{ ucfirst(str_replace('_', ' ', $kegiatan->status_evaluasi)) }}
-                        </span>
+                    <dd class="mt-1 text-sm text-gray-900 whitespace-pre-line">
+                        {{ $kegiatan->deskripsi ?? '-' }}
                     </dd>
                 </div>
             </dl>

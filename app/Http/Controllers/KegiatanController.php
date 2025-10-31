@@ -209,14 +209,49 @@ class KegiatanController extends Controller
     public function show(Kegiatan $kegiatan)
     {
         $kegiatan->load([
-            'bidang', 'user',
+            'bidang',
+            'user',
             'subKegiatans.rincianKegiatans',
-            'realisasis.dokumens',
-            'evaluasis.evaluator',
         ]);
 
-        return view('kegiatan.show', compact('kegiatan'));
+        // ✅ Total target dari semua sub-kegiatan
+        $totalTargetAnggaran = $kegiatan->subKegiatans->sum('target_anggaran');
+        $totalTargetFisik = $kegiatan->subKegiatans->avg('target_fisik') ?? 0;
+
+        // ✅ Realisasi dari realisasi_rincians
+        $totalRealisasiAnggaran = \App\Models\RealisasiRincian::join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
+            ->join('sub_kegiatans', 'sub_kegiatans.id', '=', 'rincian_kegiatans.sub_kegiatan_id')
+            ->where('sub_kegiatans.kegiatan_id', $kegiatan->id)
+            ->sum('realisasi_rincians.realisasi_anggaran');
+
+        $totalRealisasiFisik = \App\Models\RealisasiRincian::join('rincian_kegiatans', 'rincian_kegiatans.id', '=', 'realisasi_rincians.rincian_kegiatan_id')
+            ->join('sub_kegiatans', 'sub_kegiatans.id', '=', 'rincian_kegiatans.sub_kegiatan_id')
+            ->where('sub_kegiatans.kegiatan_id', $kegiatan->id)
+            ->avg('realisasi_rincians.realisasi_fisik') ?? 0;
+
+        // ✅ Progress
+        $budgetProgress = $totalTargetAnggaran > 0
+            ? ($totalRealisasiAnggaran / $totalTargetAnggaran) * 100
+            : 0;
+
+        $fisikProgress = $totalTargetFisik > 0
+            ? ($totalRealisasiFisik / $totalTargetFisik) * 100
+            : 0;
+
+        return view('kegiatan.show', compact(
+            'kegiatan',
+            'totalTargetAnggaran',
+            'totalTargetFisik',
+            'totalRealisasiAnggaran',
+            'totalRealisasiFisik',
+            'budgetProgress',
+            'fisikProgress'
+        ));
     }
+
+
+
+
 
     public function edit(Kegiatan $kegiatan)
     {
